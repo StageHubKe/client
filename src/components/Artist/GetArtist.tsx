@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { FaInstagram, FaYoutube } from "react-icons/fa";
+import { SiX } from "react-icons/si";
+
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../../redux/store";
-import { getArtistProfileById } from "../../../redux/reducers/artistReducer/artistSlice";
+import {
+  deleteArtistProfile,
+  getArtistProfileById,
+} from "../../../redux/reducers/artistReducer/artistSlice";
 import { motion } from "framer-motion";
 import { ArrowLeft, X } from "lucide-react";
 
@@ -31,6 +37,19 @@ const GetArtist: React.FC = () => {
   useEffect(() => {
     if (id && user) dispatch(getArtistProfileById(id));
   }, [dispatch, id, user]);
+
+  const handleDelete = async (artistId: string) => {
+    if (!window.confirm("Are you sure you want to delete this artist profile?"))
+      return;
+    try {
+      await dispatch(deleteArtistProfile(artistId)).unwrap();
+      alert("Artist profile deleted successfully!");
+      navigate("/getAllArtists");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete artist profile. Please try again.");
+    }
+  };
 
   if (!user) return null;
   if (!id)
@@ -65,12 +84,20 @@ const GetArtist: React.FC = () => {
             profile.user &&
             typeof profile.user !== "string" &&
             user._id === profile.user._id && (
-              <button
-                onClick={() => navigate(`/updateArtist/${profile._id}`)}
-                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2 rounded-full shadow-md transition-all"
-              >
-                ✏️ Update Profile
-              </button>
+              <>
+                <button
+                  onClick={() => navigate(`/updateArtist/${profile._id}`)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2 rounded-full shadow-md transition-all"
+                >
+                  ✏️ Update Profile
+                </button>
+                <button
+                  onClick={() => handleDelete(profile._id)}
+                  className="bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2 rounded-full shadow-md transition-all"
+                >
+                  🗑️ Delete Profile
+                </button>
+              </>
             )}
         </div>
 
@@ -185,26 +212,37 @@ const GetArtist: React.FC = () => {
               <h2 className="text-2xl font-semibold text-yellow-400 mb-4">
                 Follow {profile.stageName}
               </h2>
-              <div className="flex flex-wrap gap-4">
-                {Object.entries(profile.socialLinks).map(([key, value]) => (
+              <div className="flex flex-wrap gap-4 text-xl">
+                {profile.socialLinks.twitter && (
                   <a
-                    key={key}
-                    href={value}
+                    href={profile.socialLinks.twitter}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`px-4 py-2 rounded-lg transition ${
-                      key === "instagram"
-                        ? "bg-pink-500/20 hover:bg-pink-500/40"
-                        : key === "twitter"
-                        ? "bg-blue-500/20 hover:bg-blue-500/40"
-                        : key === "youtube"
-                        ? "bg-red-500/20 hover:bg-red-500/40"
-                        : "bg-gray-500/20 hover:bg-gray-500/40"
-                    }`}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-400/20 hover:bg-blue-400/40 transition"
                   >
-                    {key.charAt(0).toUpperCase() + key.slice(1)}
+                    <SiX />
                   </a>
-                ))}
+                )}
+                {profile.socialLinks.instagram && (
+                  <a
+                    href={profile.socialLinks.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-pink-500/20 hover:bg-pink-500/40 transition"
+                  >
+                    <FaInstagram />
+                  </a>
+                )}
+                {profile.socialLinks.youtube && (
+                  <a
+                    href={profile.socialLinks.youtube}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/40 transition"
+                  >
+                    <FaYoutube />
+                  </a>
+                )}
               </div>
             </div>
           )}

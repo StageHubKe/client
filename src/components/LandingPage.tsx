@@ -7,6 +7,7 @@ import {
   fetchCurrentUser,
   logoutUser,
 } from "../../redux/reducers/authReducer/authSlice";
+import Footer from "./footer";
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -169,7 +170,7 @@ const LandingPage = () => {
           {[
             {
               title: "Sign Up",
-              desc: "Create your artist or client profile in minutes.",
+              desc: "Create your artist profile in minutes.",
             },
             {
               title: "Showcase",
@@ -193,14 +194,7 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer
-        id="contact"
-        className="text-center py-8 border-t border-gray-700"
-      >
-        <p className="text-gray-400">
-          © {new Date().getFullYear()} StageHub. All rights reserved.
-        </p>
-      </footer>
+     <Footer/>
     </div>
   );
 };
