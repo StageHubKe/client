@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
@@ -48,6 +48,8 @@ const UpdateArtist: React.FC = () => {
   const [coverImage, setCoverImage] = useState<string>("");
   const [coverUploading, setCoverUploading] = useState(false);
 
+  const locationInputRef = useRef<HTMLInputElement | null>(null);
+  // const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   // Fetch artist profile
   useEffect(() => {
     if (!user) navigate("/login");
@@ -84,7 +86,28 @@ const UpdateArtist: React.FC = () => {
     }
   }, [profile]);
 
-  // Handlers
+  useEffect(() => {
+    if (window.google && locationInputRef.current) {
+      const autocomplete = new window.google.maps.places.Autocomplete(
+        locationInputRef.current,
+        { types: ["(cities)"], componentRestrictions: { country: "KE" } }
+      );
+
+      autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        if (place && place.formatted_address) {
+          const address = place.formatted_address;
+          setFormData((prev) => ({ ...prev, location: address }));
+          if (locationInputRef.current) {
+            locationInputRef.current.value = address;
+          }
+        }
+      });
+      return () => {
+        window.google.maps.event.clearInstanceListeners(autocomplete);
+      };
+    }
+  }, []);
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -109,8 +132,6 @@ const UpdateArtist: React.FC = () => {
       alert("You can only upload up to 5 videos.");
       return;
     }
-
-    // Check video duration before uploading
     const videoElement = document.createElement("video");
     videoElement.preload = "metadata";
 
@@ -123,8 +144,6 @@ const UpdateArtist: React.FC = () => {
         );
         return;
       }
-
-      // Upload if duration is fine
       setUploading(true);
       const data = new FormData();
       data.append("file", file);
@@ -189,8 +208,6 @@ const UpdateArtist: React.FC = () => {
       setCoverUploading(false);
     }
   };
-
-  // Submit update
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (uploading) return alert("Please wait for videos to finish uploading.");
@@ -251,7 +268,6 @@ const UpdateArtist: React.FC = () => {
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Info */}
           <motion.div whileHover={{ scale: 1.02 }}>
             <label className="block text-purple-300 mb-2">Stage Name</label>
             <input
@@ -264,7 +280,6 @@ const UpdateArtist: React.FC = () => {
             />
           </motion.div>
 
-          {/* Toggle Availability */}
           <div className="flex items-center justify-between mt-6">
             <span className="text-purple-300 font-medium">Availability</span>
 
@@ -278,7 +293,6 @@ const UpdateArtist: React.FC = () => {
                   : "bg-red-500"
               }`}
             >
-              {/* Text inside toggle */}
               <span
                 className={`absolute inset-0 flex items-center justify-center text-xs font-bold transition-all duration-300 ${
                   formData.availability === "available"
@@ -289,7 +303,6 @@ const UpdateArtist: React.FC = () => {
                 {formData.availability === "available" ? "On" : "Off"}
               </span>
 
-              {/* Toggle circle */}
               <motion.div
                 layout
                 className={`absolute top-1 left-1 w-8 h-8 bg-white rounded-full shadow-md transition-all duration-300 ${
@@ -342,7 +355,6 @@ const UpdateArtist: React.FC = () => {
           </motion.div>
 
           <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
-            {/* Years of Experience */}
             <div className="flex-1 flex flex-col">
               <label className="text-purple-300 mb-2 font-medium">
                 Years of Experience
@@ -357,8 +369,6 @@ const UpdateArtist: React.FC = () => {
                 required
               />
             </div>
-
-            {/* Location */}
             <div className="flex-1 flex flex-col">
               <label className="text-purple-300 mb-2 font-medium">
                 Location
@@ -366,7 +376,8 @@ const UpdateArtist: React.FC = () => {
               <input
                 type="text"
                 name="location"
-                placeholder="Location"
+                placeholder="Search location..."
+                ref={locationInputRef}
                 value={formData.location}
                 onChange={handleChange}
                 className="w-full p-3 rounded-lg bg-white/20 text-white border border-gray-700 outline-none focus:ring-2 focus:ring-purple-400"
@@ -375,7 +386,6 @@ const UpdateArtist: React.FC = () => {
             </div>
           </div>
 
-          {/* Pricing */}
           <h3 className="text-xl font-semibold mt-6 text-purple-300">
             Pricing
           </h3>
@@ -408,7 +418,6 @@ const UpdateArtist: React.FC = () => {
             </select>
           </div>
 
-          {/* Social Links */}
           <h3 className="text-xl font-semibold mt-6 text-purple-300">
             Social Links
           </h3>
@@ -447,7 +456,6 @@ const UpdateArtist: React.FC = () => {
             />
           </div>
 
-          {/* Videos */}
           <h3 className="text-xl font-semibold mt-6 text-purple-300">Videos</h3>
           <div className="flex flex-col items-center gap-3">
             {videos.map((video, index) => (
@@ -489,7 +497,6 @@ const UpdateArtist: React.FC = () => {
               </div>
             ))}
 
-            {/* Cover Image */}
             <h3 className="text-xl font-semibold mt-6 text-purple-300">
               Cover Image
             </h3>

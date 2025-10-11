@@ -28,12 +28,10 @@ const GetArtist: React.FC = () => {
     description?: string;
   } | null>(null);
 
-  // Redirect if not logged in
   useEffect(() => {
     if (!user) navigate("/login", { replace: true });
   }, [user, navigate]);
 
-  // Fetch artist profile
   useEffect(() => {
     if (id && user) dispatch(getArtistProfileById(id));
   }, [dispatch, id, user]);
@@ -100,8 +98,6 @@ const GetArtist: React.FC = () => {
               </>
             )}
         </div>
-
-        {/* Cover Image */}
         {profile.coverImage && (
           <div className="relative w-full h-64 sm:h-80 md:h-96">
             <img
@@ -120,8 +116,6 @@ const GetArtist: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* Introduction */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -283,27 +277,26 @@ const GetArtist: React.FC = () => {
           )}
         </motion.div>
 
-        {/* Video Modal */}
         {selectedVideo && (
-          <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-            <button
-              onClick={() => setSelectedVideo(null)}
-              className="absolute top-6 right-6 text-white hover:text-yellow-400"
-            >
-              <X size={32} />
-            </button>
-            <div className="max-w-3xl w-full">
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-3 sm:p-6">
+            <div className="relative bg-gray-900/90 rounded-2xl p-4 sm:p-6 shadow-2xl w-full max-w-md sm:max-w-2xl md:max-w-3xl">
+              <button
+                onClick={() => setSelectedVideo(null)}
+                className="absolute top-3 right-3 text-white hover:text-yellow-400 transition-all"
+              >
+                <X size={26} />
+              </button>
               <video
                 src={selectedVideo.url}
                 controls
                 autoPlay
-                className="w-full rounded-xl shadow-2xl"
+                className="w-full rounded-lg shadow-md max-h-[60vh] object-contain"
               />
               <div className="mt-4 text-center">
-                <h3 className="text-2xl font-bold text-yellow-400">
+                <h3 className="text-xl sm:text-2xl font-bold text-yellow-400">
                   {selectedVideo.title}
                 </h3>
-                <p className="text-gray-300 mt-2">
+                <p className="text-gray-300 text-sm sm:text-base mt-2">
                   {selectedVideo.description}
                 </p>
               </div>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import type { AppDispatch, RootState } from "../../../redux/store";
@@ -42,6 +42,32 @@ const CreateArtist: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [uploading, setUploading] = useState(false);
   const [coverImage, setCoverImage] = useState<string>("");
+
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  /** Initialize Autocomplete once mounted */
+  useEffect(() => {
+    if (window.google && inputRef.current) {
+      autocompleteRef.current = new google.maps.places.Autocomplete(
+        inputRef.current,
+         {
+        types: ["(cities)"],
+        componentRestrictions: { country: "KE" },
+      }
+      );
+
+      autocompleteRef.current.addListener("place_changed", () => {
+        const place = autocompleteRef.current?.getPlace();
+        if (place && place.formatted_address) {
+          setFormData((prev) => ({
+            ...prev,
+            location: place.formatted_address ?? "",
+          }));
+        }
+      });
+    }
+  }, []);
 
   // handle field changes
   const handleChange = (
@@ -228,7 +254,11 @@ const CreateArtist: React.FC = () => {
                   placeholder="Video Description"
                   value={video.description}
                   onChange={(e) =>
-                    handleVideoDetailChange(index, "description", e.target.value)
+                    handleVideoDetailChange(
+                      index,
+                      "description",
+                      e.target.value
+                    )
                   }
                   rows={2}
                   className="w-full p-3 rounded-lg bg-white/20 placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
@@ -310,6 +340,7 @@ const CreateArtist: React.FC = () => {
               className="w-full p-3 rounded-lg bg-white/20 placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
             />
             <input
+              ref={inputRef}
               type="text"
               name="location"
               placeholder="Location (City, Country)"
