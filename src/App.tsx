@@ -7,6 +7,8 @@ import CreateArtist from "./components/Artist/CreateArtist";
 import GetAllArtists from "./components/Artist/GetAllArtists";
 import GetArtist from "./components/Artist/GetArtist";
 import UpdateArtist from "./components/Artist/UpdateArtist";
+import ChatRoom from "./components/Chatroom/ChatRoom";
+import Conversations from "./components/Chatroom/Conversations";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAP_SECRET_KEY;
 
@@ -21,8 +23,9 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/getAllArtists" element={<GetAllArtists />} />
         <Route path="/artist/:id" element={<GetArtist />} />
+        <Route path="/chatroom/:conversationId" element={<ChatRoom />} />
+        <Route path="/conversations" element={<Conversations />} />
 
-        {/* Wrap only the routes that require Google Maps */}
         <Route
           path="/createArtist"
           element={

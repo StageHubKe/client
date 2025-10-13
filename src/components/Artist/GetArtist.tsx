@@ -2,25 +2,26 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaInstagram, FaYoutube } from "react-icons/fa";
 import { SiX } from "react-icons/si";
-
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../../redux/store";
 import {
   deleteArtistProfile,
   getArtistProfileById,
 } from "../../../redux/reducers/artistReducer/artistSlice";
+import { createConversation, fetchConversations } from "../../../redux/reducers/messageReducer/messageSlice";
 import { motion } from "framer-motion";
 import { ArrowLeft, X } from "lucide-react";
+import { toast } from "react-toastify";
 
 const GetArtist: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const [chatLoading, setChatLoading] = useState(false);
 
-  const { profile, loading, error } = useSelector(
-    (state: RootState) => state.artist
-  );
+  const { profile, loading, error } = useSelector((state: RootState) => state.artist);
   const { user } = useSelector((state: RootState) => state.auth);
+  const { conversations } = useSelector((state: RootState) => state.messages);
 
   const [selectedVideo, setSelectedVideo] = useState<{
     url: string;
@@ -33,7 +34,10 @@ const GetArtist: React.FC = () => {
   }, [user, navigate]);
 
   useEffect(() => {
-    if (id && user) dispatch(getArtistProfileById(id));
+    if (id && user) {
+      dispatch(getArtistProfileById(id));
+      dispatch(fetchConversations());
+    }
   }, [dispatch, id, user]);
 
   const handleDelete = async (artistId: string) => {
@@ -41,11 +45,38 @@ const GetArtist: React.FC = () => {
       return;
     try {
       await dispatch(deleteArtistProfile(artistId)).unwrap();
-      alert("Artist profile deleted successfully!");
+      toast.success("Artist profile deleted successfully!");
       navigate("/getAllArtists");
     } catch (error) {
       console.error(error);
-      alert("Failed to delete artist profile. Please try again.");
+      toast.error("Failed to delete artist profile");
+    }
+  };
+
+  const handleChatWithArtist = async () => {
+    if (!id || !user || !profile?.user || typeof profile.user === "string") return;
+
+    setChatLoading(true);
+    try {
+      const artistUserId = profile.user._id;
+      const existingConversation = conversations.find((conv) =>
+        conv.participants.some(
+          (p) => p._id === artistUserId && p._id !== user._id
+        ) && conv.participants.length === 2
+      );
+
+      if (existingConversation) {
+        navigate(`/chatroom/${existingConversation._id}`);
+        return;
+      }
+
+      const result = await dispatch(createConversation({ artistId: id })).unwrap();
+      navigate(`/chatroom/${result.conversation._id}`);
+    } catch (error) {
+      console.error("Error initiating conversation:", error);
+      toast.error("Failed to start chat");
+    } finally {
+      setChatLoading(false);
     }
   };
 
@@ -69,7 +100,6 @@ const GetArtist: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 text-white py-10 px-6">
       <div className="max-w-4xl mx-auto bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden">
-        {/* Action Buttons */}
         <div className="flex justify-between items-center px-6 py-4">
           <button
             onClick={() => navigate("/getAllArtists")}
@@ -78,25 +108,39 @@ const GetArtist: React.FC = () => {
             <ArrowLeft size={20} />
             <span>Back to All Artists</span>
           </button>
-          {user &&
-            profile.user &&
-            typeof profile.user !== "string" &&
-            user._id === profile.user._id && (
-              <>
+          <div className="flex gap-4">
+            {user &&
+              profile.user &&
+              typeof profile.user !== "string" &&
+              user._id === profile.user._id && (
+                <>
+                  <button
+                    onClick={() => navigate(`/updateArtist/${profile._id}`)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2 rounded-full shadow-md transition-all"
+                  >
+                    ✏️ Update Profile
+                  </button>
+                  <button
+                    onClick={() => handleDelete(profile._id)}
+                    className="bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2 rounded-full shadow-md transition-all"
+                  >
+                    🗑️ Delete Profile
+                  </button>
+                </>
+              )}
+            {user &&
+              profile.user &&
+              typeof profile.user !== "string" &&
+              user._id !== profile.user._id && (
                 <button
-                  onClick={() => navigate(`/updateArtist/${profile._id}`)}
-                  className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2 rounded-full shadow-md transition-all"
+                  onClick={handleChatWithArtist}
+                  className="bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2 rounded-full shadow-md transition-all disabled:opacity-50"
+                  disabled={chatLoading}
                 >
-                  ✏️ Update Profile
+                  {chatLoading ? "Starting Chat..." : "💬 Chat with Artist"}
                 </button>
-                <button
-                  onClick={() => handleDelete(profile._id)}
-                  className="bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2 rounded-full shadow-md transition-all"
-                >
-                  🗑️ Delete Profile
-                </button>
-              </>
-            )}
+              )}
+          </div>
         </div>
         {profile.coverImage && (
           <div className="relative w-full h-64 sm:h-80 md:h-96">
@@ -131,8 +175,6 @@ const GetArtist: React.FC = () => {
             continues to inspire audiences everywhere.
           </p>
         </motion.div>
-
-        {/* Artist Bio & Info */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -143,7 +185,6 @@ const GetArtist: React.FC = () => {
           <p className="text-gray-200 leading-relaxed text-lg bg-white/5 p-4 rounded-lg shadow-inner">
             {profile.bio}
           </p>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6 text-gray-300">
             <p>
               <strong className="text-yellow-400">Experience:</strong>{" "}
@@ -178,8 +219,6 @@ const GetArtist: React.FC = () => {
               {profile.totalReviews}
             </p>
           </div>
-
-          {/* Artist Account Info */}
           {profile.user && (
             <div className="mt-8 border-t border-gray-700 pt-6">
               <h2 className="text-2xl font-semibold text-yellow-400 mb-2">
@@ -199,8 +238,6 @@ const GetArtist: React.FC = () => {
               </p>
             </div>
           )}
-
-          {/* Social Links */}
           {profile.socialLinks && (
             <div className="mt-10">
               <h2 className="text-2xl font-semibold text-yellow-400 mb-4">
@@ -240,13 +277,11 @@ const GetArtist: React.FC = () => {
               </div>
             </div>
           )}
-          {/* Videos Section */}
           {profile.videos?.length ? (
             <div className="mt-10">
               <h2 className="text-2xl font-semibold text-yellow-400 mb-4">
                 Performance Videos
               </h2>
-
               <div className="overflow-x-auto">
                 <div className="flex gap-6 w-max animate-slideLeft">
                   {profile.videos.map((video, i) => (
@@ -276,7 +311,6 @@ const GetArtist: React.FC = () => {
             </p>
           )}
         </motion.div>
-
         {selectedVideo && (
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-3 sm:p-6">
             <div className="relative bg-gray-900/90 rounded-2xl p-4 sm:p-6 shadow-2xl w-full max-w-md sm:max-w-2xl md:max-w-3xl">

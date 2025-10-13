@@ -1,28 +1,71 @@
-import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
-import { type AppDispatch, type RootState } from "../../redux/store";
+import { useDispatch, useSelector } from "react-redux";
 import {
   fetchCurrentUser,
   logoutUser,
 } from "../../redux/reducers/authReducer/authSlice";
+import { getAllArtistProfiles } from "../../redux/reducers/artistReducer/artistSlice";
+import { fetchUnreadCount, setUnreadCount } from "../../redux/reducers/messageReducer/messageSlice";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+
 import Footer from "./footer";
+import type { AppDispatch, RootState } from "../../redux/store";
+import { socket } from "../socket";
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { allProfiles } = useSelector((state: RootState) => state.artist);
+  const { unreadCount } = useSelector((state: RootState) => state.messages);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     dispatch(fetchCurrentUser());
-  }, [dispatch]);
-  
+    dispatch(getAllArtistProfiles());
+    if (user) {
+      dispatch(fetchUnreadCount());
+    }
+  }, [dispatch, user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const handleUnreadCountUpdated = ({ count }: { count: number }) => {
+      dispatch(setUnreadCount(count));
+    };
+
+    socket.on("unread_count_updated", handleUnreadCountUpdated);
+
+    return () => {
+      socket.off("unread_count_updated", handleUnreadCountUpdated);
+    };
+  }, [user, dispatch]);
+
   const handleLogout = () => {
     dispatch(logoutUser());
     navigate("/login");
   };
+
+  const hasProfile =
+    user &&
+    allProfiles.some(
+      (profile) =>
+        profile.user &&
+        (typeof profile.user === "object"
+          ? profile.user._id === user._id
+          : profile.user === user._id)
+    );
+
+  const currentUserProfile = allProfiles.find(
+    (profile) =>
+      profile.user &&
+      (typeof profile.user === "object"
+        ? profile.user._id === user?._id
+        : profile.user === user?._id)
+  );
+  const artistId = currentUserProfile?._id;
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-900 via-black to-gray-900 text-white">
@@ -47,7 +90,6 @@ const LandingPage = () => {
           </a>
         </div>
 
-        {/* User / Get Started Button */}
         <div className="flex items-center gap-4 relative">
           {!user ? (
             <button
@@ -81,15 +123,27 @@ const LandingPage = () => {
                 </svg>
               </button>
 
-              {/* Dropdown */}
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-xl shadow-lg py-2 z-50">
+                <div className="absolute right-0 mt-2 w-56 bg-gray-800 rounded-xl shadow-lg py-2 z-50">
+                  {artistId && (
+                    <button
+                      onClick={() => navigate(`/artist/${artistId}`)}
+                      className="flex justify-between items-center w-full text-left px-4 py-2 text-gray-200 hover:bg-gray-700 transition"
+                    >
+                      <span>View Profile</span>
+                    </button>
+                  )}
+
                   <button
-                    onClick={() => navigate("/profile")}
-                    className="block w-full text-left px-4 py-2 text-gray-200 hover:bg-gray-700 transition"
+                    onClick={() => navigate("/conversations")}
+                    className="flex justify-between items-center w-full text-left px-4 py-2 text-gray-200 hover:bg-gray-700 transition relative"
                   >
-                    View Profile
+                    <span>Messages</span>
+                    <span className="bg-yellow-400 text-black text-xs font-bold px-2 py-0.5 rounded-full">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
                   </button>
+
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-4 py-2 text-gray-200 hover:bg-gray-700 transition"
@@ -129,19 +183,21 @@ const LandingPage = () => {
               Explore Artists
             </button>
 
-            {!user ? (
-              <button
-                onClick={() => navigate("/register")}
-                className="border border-yellow-400 px-6 py-3 rounded-full font-bold text-lg hover:bg-yellow-400 hover:text-black transition-all"
-              >
-                Join as Artist
-              </button>
-            ) : (
+            {user && !hasProfile && (
               <button
                 onClick={() => navigate("/createArtist")}
                 className="border border-yellow-400 px-6 py-3 rounded-full font-bold text-lg hover:bg-yellow-400 hover:text-black transition-all"
               >
                 Create Profile
+              </button>
+            )}
+
+            {!user && (
+              <button
+                onClick={() => navigate("/register")}
+                className="border border-yellow-400 px-6 py-3 rounded-full font-bold text-lg hover:bg-yellow-400 hover:text-black transition-all"
+              >
+                Join as Artist
               </button>
             )}
           </div>
@@ -161,7 +217,6 @@ const LandingPage = () => {
         </motion.div>
       </section>
 
-      {/* How It Works */}
       <section id="howitworks" className="py-20 bg-gray-800 text-center">
         <h3 className="text-4xl font-bold mb-12 text-yellow-400">
           How It Works
@@ -193,8 +248,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Footer */}
-     <Footer/>
+      <Footer />
     </div>
   );
 };
