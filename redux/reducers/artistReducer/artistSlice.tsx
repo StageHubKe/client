@@ -158,6 +158,23 @@ export const getAllArtistProfiles = createAsyncThunk<
   }
 });
 
+// ✅ Delete artist profile
+export const deleteArtistProfile = createAsyncThunk<
+  { message: string },
+  string,
+  { rejectValue: string }
+>("artistProfile/delete", async (id, { rejectWithValue }) => {
+  try {
+    const { data } = await axios.delete(`${API_URL}/deleteArtistProfile/${id}`);
+    return data;
+  } catch (error) {
+    const err = error as AxiosError<{ message: string }>;
+    return rejectWithValue(
+      err.response?.data?.message || "Error deleting artist profile"
+    );
+  }
+});
+
 // ✅ Slice
 const artistProfileSlice = createSlice({
   name: "artistProfile",
@@ -206,6 +223,18 @@ const artistProfileSlice = createSlice({
       .addCase(updateArtistProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to update profile";
+      })
+      .addCase(deleteArtistProfile.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(deleteArtistProfile.fulfilled, (state) => {
+        state.loading = false;
+        state.success = true;
+        state.profile = null;
+      })
+      .addCase(deleteArtistProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to delete profile";
       });
   },
 });

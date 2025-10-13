@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import type { AppDispatch, RootState } from "../../../redux/store";
 import {
   createArtistProfile,
@@ -17,11 +18,9 @@ type Video = {
 
 const CreateArtist: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { loading, error} = useSelector(
-    (state: RootState) => state.artist
-  );
+  const { loading, error } = useSelector((state: RootState) => state.artist);
 
   const [formData, setFormData] = useState({
     stageName: "",
@@ -44,43 +43,80 @@ const CreateArtist: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [coverImage, setCoverImage] = useState<string>("");
 
-  // ================================
-  // HANDLE INPUT CHANGES
-  // ================================
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  /** Initialize Autocomplete once mounted */
+  useEffect(() => {
+    if (window.google && inputRef.current) {
+      autocompleteRef.current = new google.maps.places.Autocomplete(
+        inputRef.current,
+         {
+        types: ["(cities)"],
+        componentRestrictions: { country: "KE" },
+      }
+      );
+
+      autocompleteRef.current.addListener("place_changed", () => {
+        const place = autocompleteRef.current?.getPlace();
+        if (place && place.formatted_address) {
+          setFormData((prev) => ({
+            ...prev,
+            location: place.formatted_address ?? "",
+          }));
+        }
+      });
+    }
+  }, []);
+
+  // handle field changes
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
-  ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  ) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleVideoDetailChange = (
-    index: number,
-    field: "title" | "description",
-    value: string
-  ) => {
-    setVideos((prev) =>
-      prev.map((v, i) => (i === index ? { ...v, [field]: value } : v))
-    );
-  };
-
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // handle cover image upload
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setUploading(true);
+    const data = new FormData();
+    data.append("file", file);
+    data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+    data.append("resource_type", "image");
+
+    try {
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: "POST", body: data }
+      );
+      const result = await res.json();
+      setCoverImage(result.secure_url);
+    } catch (err) {
+      alert("Cover image upload failed. Try again.");
+      console.error(err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // handle video upload
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     if (videos.length >= 5) {
-      alert("You can only upload up to 5 videos.");
+      alert("You can upload up to 5 videos only.");
       return;
     }
 
-    const videoElement = document.createElement("video");
-    videoElement.preload = "metadata";
+    const videoEl = document.createElement("video");
+    videoEl.preload = "metadata";
 
-    videoElement.onloadedmetadata = async () => {
-      window.URL.revokeObjectURL(videoElement.src);
-      if (videoElement.duration > 60) {
-        alert("Video too long! Please upload 45s or less.");
+    videoEl.onloadedmetadata = async () => {
+      if (videoEl.duration > 60) {
+        alert("Video too long! Upload 45s or less.");
         return;
       }
 
@@ -101,66 +137,40 @@ const CreateArtist: React.FC = () => {
           { url: result.secure_url, title: "", description: "" },
         ]);
       } catch (err) {
-        console.error("Video upload failed:", err);
-        alert("Failed to upload video. Try again.");
+        alert("Video upload failed. Try again.");
+        console.error(err);
       } finally {
         setUploading(false);
       }
     };
 
-    videoElement.src = URL.createObjectURL(file);
+    videoEl.src = URL.createObjectURL(file);
+  };
+
+  const handleVideoDetailChange = (
+    index: number,
+    field: "title" | "description",
+    value: string
+  ) => {
+    setVideos((prev) =>
+      prev.map((v, i) => (i === index ? { ...v, [field]: value } : v))
+    );
   };
 
   const removeVideo = (index: number) => {
     setVideos((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // ================================
-  // COVER IMAGE UPLOAD
-  // ================================
-  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    const data = new FormData();
-    data.append("file", file);
-    data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-    data.append("resource_type", "image");
-
-    try {
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-        { method: "POST", body: data }
-      );
-      const result = await res.json();
-      setCoverImage(result.secure_url);
-    } catch (err) {
-      console.error("Cover image upload failed:", err);
-      alert("Cover image upload failed. Try again.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  // ================================
-  // SUBMIT FORM
-  // ================================
-  const handleSubmit = (e: React.FormEvent) => {
+  // handle submit
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (uploading) {
       alert("Please wait for uploads to finish.");
       return;
     }
 
-    if (!user?.id) {
-      alert("You must be logged in to create a profile.");
-      return;
-    }
-
     const profileData: NewArtistProfileInput = {
-      user: user.id,
+      user: user?.id || "",
       stageName: formData.stageName,
       genre: formData.genre,
       type: formData.type,
@@ -183,7 +193,14 @@ const CreateArtist: React.FC = () => {
       availability: formData.availability,
     };
 
-    dispatch(createArtistProfile(profileData));
+    try {
+      await dispatch(createArtistProfile(profileData)).unwrap();
+      alert("🎉 Profile created successfully!");
+      navigate("/getAllArtists");
+    } catch (err) {
+      console.error("Error creating profile:", err);
+      alert("Failed to create profile. Try again.");
+    }
   };
 
   return (
@@ -193,17 +210,17 @@ const CreateArtist: React.FC = () => {
           Create Your Artist Profile 🎤
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Cover Image Upload */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Cover Image */}
           <div className="flex flex-col items-center gap-2">
             {coverImage ? (
               <img
                 src={coverImage}
                 alt="Cover"
-                className="w-full h-40 object-cover rounded-xl border-2 border-purple-400 shadow-md"
+                className="w-full h-48 object-cover rounded-xl border-2 border-purple-400 shadow-md"
               />
             ) : (
-              <div className="w-full h-40 bg-white/20 flex items-center justify-center text-gray-300 rounded-xl">
+              <div className="w-full h-48 bg-white/20 flex items-center justify-center text-gray-300 rounded-xl">
                 No Cover Image Uploaded
               </div>
             )}
@@ -215,8 +232,8 @@ const CreateArtist: React.FC = () => {
             />
           </div>
 
-          {/* Video Upload Section */}
-          <div className="flex flex-col items-center gap-3">
+          {/* Videos */}
+          <div className="flex flex-col items-center gap-4">
             {videos.map((video, index) => (
               <div key={index} className="w-full space-y-2">
                 <video
@@ -237,7 +254,11 @@ const CreateArtist: React.FC = () => {
                   placeholder="Video Description"
                   value={video.description}
                   onChange={(e) =>
-                    handleVideoDetailChange(index, "description", e.target.value)
+                    handleVideoDetailChange(
+                      index,
+                      "description",
+                      e.target.value
+                    )
                   }
                   rows={2}
                   className="w-full p-3 rounded-lg bg-white/20 placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
@@ -245,7 +266,7 @@ const CreateArtist: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => removeVideo(index)}
-                  className="text-red-400 hover:text-red-600 mt-1"
+                  className="text-red-400 hover:text-red-600"
                 >
                   Remove Video
                 </button>
@@ -307,15 +328,74 @@ const CreateArtist: React.FC = () => {
             className="w-full p-3 rounded-lg bg-white/20 placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
           />
 
+          {/* Experience & Location */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <input
+              type="number"
+              name="experienceYears"
+              placeholder="Years of Experience"
+              value={formData.experienceYears}
+              onChange={handleChange}
+              required
+              className="w-full p-3 rounded-lg bg-white/20 placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
+            />
+            <input
+              ref={inputRef}
+              type="text"
+              name="location"
+              placeholder="Location (City, Country)"
+              value={formData.location}
+              onChange={handleChange}
+              required
+              className="w-full p-3 rounded-lg bg-white/20 placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
+            />
+          </div>
+
+          {/* Socials */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <input
+              type="url"
+              name="instagram"
+              placeholder="Instagram Link"
+              value={formData.instagram}
+              onChange={handleChange}
+              className="w-full p-3 rounded-lg bg-white/20 placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
+            />
+            <input
+              type="url"
+              name="twitter"
+              placeholder="Twitter Link"
+              value={formData.twitter}
+              onChange={handleChange}
+              className="w-full p-3 rounded-lg bg-white/20 placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
+            />
+            <input
+              type="url"
+              name="youtube"
+              placeholder="YouTube Link"
+              value={formData.youtube}
+              onChange={handleChange}
+              className="w-full p-3 rounded-lg bg-white/20 placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
+            />
+            <input
+              type="url"
+              name="tiktok"
+              placeholder="TikTok Link"
+              value={formData.tiktok}
+              onChange={handleChange}
+              className="w-full p-3 rounded-lg bg-white/20 placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
+            />
+          </div>
+
           {/* Pricing */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-3 gap-4">
             <input
               type="number"
               name="minRate"
               placeholder="Min Rate"
               value={formData.minRate}
               onChange={handleChange}
-              className="w-full p-3 rounded-lg bg-white/20 placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
+              className="p-3 rounded-lg bg-white/20 placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
             />
             <input
               type="number"
@@ -323,13 +403,13 @@ const CreateArtist: React.FC = () => {
               placeholder="Max Rate"
               value={formData.maxRate}
               onChange={handleChange}
-              className="w-full p-3 rounded-lg bg-white/20 placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
+              className="p-3 rounded-lg bg-white/20 placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
             />
             <select
               name="currency"
               value={formData.currency}
               onChange={handleChange}
-              className="w-full p-3 rounded-lg bg-white/20 text-gray-200 outline-none focus:ring-2 focus:ring-purple-400"
+              className="p-3 rounded-lg bg-white/20 text-gray-200 outline-none focus:ring-2 focus:ring-purple-400"
             >
               <option value="USD">USD</option>
               <option value="KES">KES</option>
