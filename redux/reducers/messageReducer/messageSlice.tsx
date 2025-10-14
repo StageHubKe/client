@@ -1,8 +1,4 @@
-import {
-  createSlice,
-  createAsyncThunk,
-  type PayloadAction,
-} from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import axios, { AxiosError } from "axios";
 import type { User } from "../../../src/types";
 import type { RootState } from "../../store";
@@ -48,15 +44,17 @@ const initialState: MessagesState = {
   participantNames: {},
 };
 
-
 const handleAxiosError = (err: unknown, fallback: string): string => {
   if (axios.isAxiosError(err)) {
     const axiosErr = err as AxiosError<{ msg?: string; message?: string }>;
-    return axiosErr.response?.data?.msg || axiosErr.response?.data?.message || fallback;
+    return (
+      axiosErr.response?.data?.msg ||
+      axiosErr.response?.data?.message ||
+      fallback
+    );
   }
   return fallback;
 };
-
 
 // Fetch all conversations
 export const fetchConversations = createAsyncThunk<
@@ -70,8 +68,9 @@ export const fetchConversations = createAsyncThunk<
     });
     return data.conversations;
   } catch (err: unknown) {
-       return rejectWithValue(handleAxiosError(err, "Failed to fetch conversations"));
-
+    return rejectWithValue(
+      handleAxiosError(err, "Failed to fetch conversations")
+    );
   }
 });
 
@@ -90,8 +89,7 @@ export const fetchMessages = createAsyncThunk<
     );
     return { conversationId, messages: data.messages };
   } catch (err: unknown) {
-      return rejectWithValue(handleAxiosError(err, "Failed to fetch messages"));
-
+    return rejectWithValue(handleAxiosError(err, "Failed to fetch messages"));
   }
 });
 
@@ -111,8 +109,7 @@ export const sendMessage = createAsyncThunk<
       );
       return data.message;
     } catch (err: unknown) {
-         return rejectWithValue(handleAxiosError(err, "Failed to send message"));
-
+      return rejectWithValue(handleAxiosError(err, "Failed to send message"));
     }
   }
 );
@@ -131,8 +128,9 @@ export const createConversation = createAsyncThunk<
     );
     return data;
   } catch (err: unknown) {
-        return rejectWithValue(handleAxiosError(err, "Failed to create conversation"));
-
+    return rejectWithValue(
+      handleAxiosError(err, "Failed to create conversation")
+    );
   }
 });
 
@@ -152,8 +150,9 @@ export const markMessageAsRead = createAsyncThunk<
       );
       return { messageId, conversationId };
     } catch (err: unknown) {
-       return rejectWithValue(handleAxiosError(err, "Failed to mark message as read"));
-
+      return rejectWithValue(
+        handleAxiosError(err, "Failed to mark message as read")
+      );
     }
   }
 );
@@ -191,8 +190,9 @@ export const fetchConversationById = createAsyncThunk<
         participantName: otherParticipant?.name || "Unknown",
       };
     } catch (err: unknown) {
-          return rejectWithValue(handleAxiosError(err, "Failed to fetch conversation"));
-
+      return rejectWithValue(
+        handleAxiosError(err, "Failed to fetch conversation")
+      );
     }
   }
 );
@@ -209,10 +209,72 @@ export const fetchUnreadCount = createAsyncThunk<
     });
     return data.count;
   } catch (err: unknown) {
-       return rejectWithValue(handleAxiosError(err, "Failed to fetch unread count"));
-
+    return rejectWithValue(
+      handleAxiosError(err, "Failed to fetch unread count")
+    );
   }
 });
+
+// Update a message
+export const updateMessage = createAsyncThunk<
+  { conversationId: string; message: Message },
+  { messageId: string; conversationId: string; newText: string },
+  { rejectValue: string }
+>(
+  "messages/updateMessage",
+  async ({ messageId, conversationId, newText }, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.put(
+        `${API_URL}/message/${messageId}`,
+        { text: newText },
+        { withCredentials: true }
+      );
+      return { conversationId, message: data.message };
+    } catch (err: unknown) {
+      return rejectWithValue(handleAxiosError(err, "Failed to update message"));
+    }
+  }
+);
+
+// Delete a message
+export const deleteMessage = createAsyncThunk<
+  { conversationId: string; messageId: string },
+  { messageId: string; conversationId: string },
+  { rejectValue: string }
+>(
+  "messages/deleteMessage",
+  async ({ messageId, conversationId }, { rejectWithValue }) => {
+    try {
+      await axios.delete(`${API_URL}/message/${messageId}`, {
+        withCredentials: true,
+      });
+      return { conversationId, messageId };
+    } catch (err: unknown) {
+      return rejectWithValue(handleAxiosError(err, "Failed to delete message"));
+    }
+  }
+);
+
+// Delete a conversation
+export const deleteConversation = createAsyncThunk<
+  { conversationId: string },
+  string,
+  { rejectValue: string }
+>(
+  "messages/deleteConversation",
+  async (conversationId, { rejectWithValue }) => {
+    try {
+      await axios.delete(`${API_URL}/conversation/${conversationId}`, {
+        withCredentials: true,
+      });
+      return { conversationId };
+    } catch (err: unknown) {
+      return rejectWithValue(
+        handleAxiosError(err, "Failed to delete conversation")
+      );
+    }
+  }
+);
 
 // Slice
 const messageSlice = createSlice({
@@ -247,7 +309,7 @@ const messageSlice = createSlice({
         );
       }
 
-      // ✅ Increment unread count if message is from another user and unread
+      // Increment unread count if message is from another user and unread
       if (
         typeof message.sender !== "string" &&
         message.sender._id !== currentUserId &&
@@ -300,7 +362,19 @@ const messageSlice = createSlice({
       const { conversationId, name } = action.payload;
       state.participantNames[conversationId] = name;
     },
+    deleteConversationLocally: (
+      state,
+      action: PayloadAction<{ conversationId: string }>
+    ) => {
+      const { conversationId } = action.payload;
+      state.conversations = state.conversations.filter(
+        (c) => c._id !== conversationId
+      );
+      delete state.messages[conversationId];
+      delete state.participantNames[conversationId];
+    },
   },
+
   extraReducers: (builder) => {
     builder
       .addCase(fetchConversations.pending, (state) => {
@@ -429,6 +503,57 @@ const messageSlice = createSlice({
       .addCase(fetchUnreadCount.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to fetch unread count";
+      })
+      .addCase(updateMessage.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateMessage.fulfilled, (state, action) => {
+        state.loading = false;
+        const { conversationId, message } = action.payload;
+        if (state.messages[conversationId]) {
+          state.messages[conversationId] = state.messages[conversationId].map(
+            (m) => (m._id === message._id ? message : m)
+          );
+        }
+      })
+      .addCase(updateMessage.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to update message";
+      })
+      .addCase(deleteMessage.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteMessage.fulfilled, (state, action) => {
+        state.loading = false;
+        const { conversationId, messageId } = action.payload;
+        if (state.messages[conversationId]) {
+          state.messages[conversationId] = state.messages[
+            conversationId
+          ].filter((m) => m._id !== messageId);
+        }
+      })
+      .addCase(deleteMessage.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to delete message";
+      })
+      .addCase(deleteConversation.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteConversation.fulfilled, (state, action) => {
+        state.loading = false;
+        const { conversationId } = action.payload;
+        state.conversations = state.conversations.filter(
+          (c) => c._id !== conversationId
+        );
+        delete state.messages[conversationId];
+        delete state.participantNames[conversationId];
+      })
+      .addCase(deleteConversation.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to delete conversation";
       });
   },
 });
@@ -439,7 +564,6 @@ export const {
   markMessageReadLocally,
   setUnreadCount,
   setParticipantName,
+  deleteConversationLocally,
 } = messageSlice.actions;
 export default messageSlice.reducer;
-
-
