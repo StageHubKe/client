@@ -29,12 +29,36 @@ export const subscribeToMessageRead = (callback: (data: { messageId: string; con
   socket.on("message_read", callback);
 };
 
+export const subscribeToMessageUpdated = (callback: (message: Message) => void) => {
+  socket.on("message_updated", callback);
+};
+
+export const subscribeToMessageDeleted = (callback: (data: { messageId: string; conversationId: string }) => void) => {
+  socket.on("message_deleted", callback);
+};
+
+export const subscribeToConversationDeleted = (callback: (data: { conversationId: string }) => void) => {
+  socket.on("conversation_deleted", callback);
+};
+
 export const sendMessage = (message: SendMessagePayload) => {
   socket.emit("send_message", message);
 };
 
 export const markMessageAsRead = (messageId: string) => {
   socket.emit("mark_as_read", { messageId });
+};
+
+export const editMessage = (messageId: string, text: string) => {
+  socket.emit("edit_message", { messageId, text });
+};
+
+export const deleteMessage = (messageId: string, conversationId: string) => {
+  socket.emit("delete_message", { messageId, conversationId });
+};
+
+export const deleteConversation = (conversationId: string) => {
+  socket.emit("delete_conversation", { conversationId });
 };
 
 socket.on("connect", async () => {
