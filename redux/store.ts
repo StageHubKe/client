@@ -3,12 +3,14 @@
     import authSlice from "./reducers/authReducer/authSlice";
     import artistSlice from "./reducers/artistReducer/artistSlice";
     import messageSlice from "./reducers/messageReducer/messageSlice";
+    import posterSlice from "./reducers/posterReducer/posterSlice";
 
     export const store = configureStore({
       reducer: {
         auth: authSlice,
         artist: artistSlice,
         messages: messageSlice,
+        poster: posterSlice,
       },
         middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

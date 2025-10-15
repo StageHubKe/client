@@ -5,10 +5,12 @@ import {
   logoutUser,
 } from "../../redux/reducers/authReducer/authSlice";
 import { getAllArtistProfiles } from "../../redux/reducers/artistReducer/artistSlice";
-import { fetchUnreadCount, setUnreadCount } from "../../redux/reducers/messageReducer/messageSlice";
+import {
+  fetchUnreadCount,
+  setUnreadCount,
+} from "../../redux/reducers/messageReducer/messageSlice";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-
 import Footer from "./footer";
 import type { AppDispatch, RootState } from "../../redux/store";
 import { socket } from "../socket";
@@ -24,24 +26,20 @@ const LandingPage = () => {
   useEffect(() => {
     dispatch(fetchCurrentUser());
     dispatch(getAllArtistProfiles());
-    if (user) {
-      dispatch(fetchUnreadCount());
-    }
+    if (user) dispatch(fetchUnreadCount());
   }, [dispatch, user]);
 
-  useEffect(() => {
-    if (!user) return;
-
-    const handleUnreadCountUpdated = ({ count }: { count: number }) => {
-      dispatch(setUnreadCount(count));
-    };
-
-    socket.on("unread_count_updated", handleUnreadCountUpdated);
-
-    return () => {
-      socket.off("unread_count_updated", handleUnreadCountUpdated);
-    };
-  }, [user, dispatch]);
+ useEffect(() => {
+  if (!user) return;
+  const handleUnreadCountUpdated = ({ count }: { count: number }) => {
+    dispatch(setUnreadCount(count));
+  };
+  const cleanup = () => {
+    socket.off("unread_count_updated", handleUnreadCountUpdated);
+  };
+  socket.on("unread_count_updated", handleUnreadCountUpdated);
+  return cleanup;
+}, [user, dispatch]);
 
   const handleLogout = () => {
     dispatch(logoutUser());
@@ -50,39 +48,36 @@ const LandingPage = () => {
 
   const hasProfile =
     user &&
-    allProfiles.some(
-      (profile) =>
-        profile.user &&
-        (typeof profile.user === "object"
-          ? profile.user._id === user._id
-          : profile.user === user._id)
+    allProfiles.some((profile) =>
+      typeof profile.user === "object"
+        ? profile.user._id === user._id
+        : profile.user === user._id
     );
 
-  const currentUserProfile = allProfiles.find(
-    (profile) =>
-      profile.user &&
-      (typeof profile.user === "object"
-        ? profile.user._id === user?._id
-        : profile.user === user?._id)
+  const currentUserProfile = allProfiles.find((profile) =>
+    typeof profile.user === "object"
+      ? profile.user._id === user?._id
+      : profile.user === user?._id
   );
   const artistId = currentUserProfile?._id;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-900 via-black to-gray-900 text-white">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-black via-gray-900 to-black text-white">
       {/* Navbar */}
-      <nav className="flex justify-between items-center p-6 bg-transparent relative">
-        <h1 className="text-3xl font-extrabold text-yellow-400 tracking-wide">
+      <nav className="fixed top-0 left-0 right-0 flex justify-between items-center p-5 md:px-16 bg-black/40 backdrop-blur-md z-50">
+        <h1
+          className="text-3xl font-extrabold text-yellow-400 cursor-pointer"
+          onClick={() => navigate("/")}
+        >
           StageHub<span className="text-white">.</span>
         </h1>
 
-        <div className="hidden md:flex gap-8 text-lg">
+        {/* Nav Links */}
+        <div className="hidden md:flex gap-8 text-lg font-medium">
           <a href="#artists" className="hover:text-yellow-400 transition-all">
             Artists
           </a>
-          <a
-            href="#howitworks"
-            className="hover:text-yellow-400 transition-all"
-          >
+          <a href="#howitworks" className="hover:text-yellow-400 transition-all">
             How It Works
           </a>
           <a href="#contact" className="hover:text-yellow-400 transition-all">
@@ -90,19 +85,20 @@ const LandingPage = () => {
           </a>
         </div>
 
-        <div className="flex items-center gap-4 relative">
+        {/* Auth Section */}
+        <div className="relative flex items-center">
           {!user ? (
             <button
               onClick={() => navigate("/login")}
-              className="bg-yellow-400 text-black px-5 py-2 rounded-full font-semibold hover:bg-yellow-300 transition-all"
+              className="bg-yellow-400 text-black px-6 py-2 rounded-full font-semibold hover:bg-yellow-300 transition"
             >
               Get Started
             </button>
           ) : (
-            <div className="relative">
+            <div>
               <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="flex items-center gap-2 border border-yellow-400 px-4 py-2 rounded-full font-semibold hover:bg-yellow-400 hover:text-black transition-all"
+                onClick={() => setMenuOpen((prev) => !prev)}
+                className="flex items-center gap-2 border border-yellow-400 px-4 py-2 rounded-full hover:bg-yellow-400 hover:text-black transition font-semibold"
               >
                 <span>{user.name}</span>
                 <svg
@@ -112,7 +108,6 @@ const LandingPage = () => {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
                     strokeLinecap="round"
@@ -124,29 +119,27 @@ const LandingPage = () => {
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-gray-800 rounded-xl shadow-lg py-2 z-50">
+                <div className="absolute right-0 mt-3 w-56 bg-gray-800 rounded-xl shadow-xl py-2 z-50 animate-fadeIn">
                   {artistId && (
                     <button
                       onClick={() => navigate(`/artist/${artistId}`)}
-                      className="flex justify-between items-center w-full text-left px-4 py-2 text-gray-200 hover:bg-gray-700 transition"
+                      className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
                     >
-                      <span>View Profile</span>
+                      View Profile
                     </button>
                   )}
-
                   <button
                     onClick={() => navigate("/conversations")}
-                    className="flex justify-between items-center w-full text-left px-4 py-2 text-gray-200 hover:bg-gray-700 transition relative"
+                    className="flex justify-between items-center w-full text-left px-5 py-2 hover:bg-gray-700 transition"
                   >
                     <span>Messages</span>
                     <span className="bg-yellow-400 text-black text-xs font-bold px-2 py-0.5 rounded-full">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   </button>
-
                   <button
                     onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-gray-200 hover:bg-gray-700 transition"
+                    className="block w-full text-left px-5 py-2 text-red-400 hover:bg-gray-700 transition"
                   >
                     Logout
                   </button>
@@ -158,7 +151,7 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="flex flex-col md:flex-row items-center justify-between px-10 md:px-20 py-20">
+      <section className="flex flex-col md:flex-row items-center justify-between px-10 md:px-20 pt-32 md:pt-40 pb-20 gap-12">
         <motion.div
           initial={{ x: -80, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
@@ -166,36 +159,47 @@ const LandingPage = () => {
           className="md:w-1/2"
         >
           <h2 className="text-5xl md:text-6xl font-extrabold leading-tight mb-6">
-            Connect with{" "}
-            <span className="text-yellow-400">Talented Artists</span> for Your
-            Next Event
+            Discover & Book{" "}
+            <span className="text-yellow-400">Top Artists</span> for Your Next
+            Event
           </h2>
-          <p className="text-gray-300 text-lg mb-8">
-            Discover and hire the best{" "}
-            <strong>bands, solo performers, MCs, dancers, DJs,</strong> and
-            <strong> event planners</strong> all in one place.
+          <p className="text-gray-300 text-lg mb-10 leading-relaxed">
+            Whether you're looking for <strong>performers</strong>,{" "}
+            <strong>DJs</strong>, or <strong>event planners</strong>, StageHub
+            helps you connect with the right talent effortlessly.
           </p>
-          <div className="flex gap-6">
+
+          <div className="flex flex-wrap gap-4">
             <button
               onClick={() => navigate("/getAllArtists")}
-              className="bg-yellow-400 text-black px-6 py-3 rounded-full font-bold text-lg hover:bg-yellow-300 transition-all"
+              className="bg-yellow-400 text-black px-6 py-3 rounded-full font-bold hover:bg-yellow-300 transition-all"
             >
               Explore Artists
             </button>
-
+            <button
+              onClick={() => navigate("/gig-posts")}
+              className="border border-yellow-400 px-6 py-3 rounded-full font-bold hover:bg-yellow-400 hover:text-black transition-all"
+            >
+              Explore Gigs
+            </button>
+            <button
+              onClick={() => navigate("/create-gig")}
+              className="border border-yellow-400 px-6 py-3 rounded-full font-bold hover:bg-yellow-400 hover:text-black transition-all"
+            >
+              Create Gig
+            </button>
             {user && !hasProfile && (
               <button
                 onClick={() => navigate("/createArtist")}
-                className="border border-yellow-400 px-6 py-3 rounded-full font-bold text-lg hover:bg-yellow-400 hover:text-black transition-all"
+                className="border border-yellow-400 px-6 py-3 rounded-full font-bold hover:bg-yellow-400 hover:text-black transition-all"
               >
                 Create Profile
               </button>
             )}
-
             {!user && (
               <button
                 onClick={() => navigate("/register")}
-                className="border border-yellow-400 px-6 py-3 rounded-full font-bold text-lg hover:bg-yellow-400 hover:text-black transition-all"
+                className="border border-yellow-400 px-6 py-3 rounded-full font-bold hover:bg-yellow-400 hover:text-black transition-all"
               >
                 Join as Artist
               </button>
@@ -207,26 +211,27 @@ const LandingPage = () => {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1 }}
-          className="md:w-1/2 mt-12 md:mt-0 flex justify-center"
+          className="md:w-1/2 flex justify-center"
         >
           <img
             src="/images/performance.jpg"
             alt="StageHub artists performing"
-            className="rounded-2xl shadow-2xl w-full max-w-lg"
+            className="rounded-2xl shadow-2xl w-full max-w-lg object-cover"
           />
         </motion.div>
       </section>
 
-      <section id="howitworks" className="py-20 bg-gray-800 text-center">
-        <h3 className="text-4xl font-bold mb-12 text-yellow-400">
+      {/* How It Works Section */}
+      <section
+        id="howitworks"
+        className="py-24 bg-gray-800 text-center px-8 md:px-20"
+      >
+        <h3 className="text-4xl font-bold mb-14 text-yellow-400">
           How It Works
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 px-10 md:px-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {[
-            {
-              title: "Sign Up",
-              desc: "Create your artist profile in minutes.",
-            },
+            { title: "Sign Up", desc: "Create your artist profile in minutes." },
             {
               title: "Showcase",
               desc: "Upload your work and highlight your talent.",
@@ -239,7 +244,8 @@ const LandingPage = () => {
             <motion.div
               key={i}
               whileHover={{ scale: 1.05 }}
-              className="bg-gray-900 rounded-2xl p-8 shadow-lg"
+              transition={{ duration: 0.3 }}
+              className="bg-gray-900 p-8 rounded-2xl shadow-lg hover:shadow-yellow-400/20 transition"
             >
               <h4 className="text-2xl font-bold mb-3">{step.title}</h4>
               <p className="text-gray-400">{step.desc}</p>

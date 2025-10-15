@@ -1,55 +1,86 @@
 import { Route, Routes } from "react-router-dom";
 import { LoadScript } from "@react-google-maps/api";
+
 import LandingPage from "./components/LandingPage";
 import Register from "./components/Auth/Register";
 import Login from "./components/Auth/Login";
+
 import CreateArtist from "./components/Artist/CreateArtist";
 import GetAllArtists from "./components/Artist/GetAllArtists";
 import GetArtist from "./components/Artist/GetArtist";
 import UpdateArtist from "./components/Artist/UpdateArtist";
+
 import ChatRoom from "./components/Chatroom/ChatRoom";
 import Conversations from "./components/Chatroom/Conversations";
 
+import CreateGigPoster from "./components/Poster/CreateGigPoster";
+import GigPosterList from "./components/Poster/GigPosterList";
+import GigPosterDetails from "./components/Poster/GigPosterDetails";
+import EditGigPoster from "./components/Poster/EditGigPoster";
+
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAP_SECRET_KEY;
+
+// Wrapper to automatically load Google Maps for components needing places autocomplete
+const WithGoogleMaps = ({ children }: { children: React.ReactNode }) => (
+  <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={["places"]}>
+    {children}
+  </LoadScript>
+);
 
 const App = () => {
   console.log("Google Maps API Key Loaded:", GOOGLE_MAPS_API_KEY);
 
   return (
-    <>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/getAllArtists" element={<GetAllArtists />} />
-        <Route path="/artist/:id" element={<GetArtist />} />
-        <Route path="/chatroom/:conversationId" element={<ChatRoom />} />
-        <Route path="/conversations" element={<Conversations />} />
+    <Routes>
+      {/* Public Pages */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/login" element={<Login />} />
 
-        <Route
-          path="/createArtist"
-          element={
-            <LoadScript
-              googleMapsApiKey={GOOGLE_MAPS_API_KEY}
-              libraries={["places"]}
-            >
-              <CreateArtist />
-            </LoadScript>
-          }
-        />
-        <Route
-          path="/updateArtist/:id"
-          element={
-            <LoadScript
-              googleMapsApiKey={GOOGLE_MAPS_API_KEY}
-              libraries={["places"]}
-            >
-              <UpdateArtist />
-            </LoadScript>
-          }
-        />
-      </Routes>
-    </>
+      {/* Artist Routes */}
+      <Route path="/getAllArtists" element={<GetAllArtists />} />
+      <Route path="/artist/:id" element={<GetArtist />} />
+      <Route
+        path="/createArtist"
+        element={
+          <WithGoogleMaps>
+            <CreateArtist />
+          </WithGoogleMaps>
+        }
+      />
+      <Route
+        path="/updateArtist/:id"
+        element={
+          <WithGoogleMaps>
+            <UpdateArtist />
+          </WithGoogleMaps>
+        }
+      />
+
+      {/* Chat Routes */}
+      <Route path="/conversations" element={<Conversations />} />
+      <Route path="/chatroom/:conversationId" element={<ChatRoom />} />
+
+      {/* Gig Poster Routes */}
+      <Route path="/gig-posts" element={<GigPosterList />} />
+      <Route path="/gig-post/:id" element={<GigPosterDetails />} />
+      <Route
+        path="/create-gig"
+        element={
+          <WithGoogleMaps>
+            <CreateGigPoster />
+          </WithGoogleMaps>
+        }
+      />
+      <Route
+        path="/edit-gig/:id"
+        element={
+          <WithGoogleMaps>
+            <EditGigPoster />
+          </WithGoogleMaps>
+        }
+      />
+    </Routes>
   );
 };
 

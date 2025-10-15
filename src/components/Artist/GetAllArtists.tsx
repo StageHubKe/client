@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../../redux/store";
 import { getAllArtistProfiles } from "../../../redux/reducers/artistReducer/artistSlice";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { ArtistProfile } from "../../../redux/reducers/artistReducer/artistSlice";
 
 const PAGE_SIZE = 6; 
@@ -17,6 +17,8 @@ const GetAllArtists: React.FC = () => {
   const [filterType, setFilterType] = useState("");
   const [filterAvailability, setFilterAvailability] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     dispatch(getAllArtistProfiles());
@@ -113,6 +115,7 @@ const GetAllArtists: React.FC = () => {
               return (
                 <div
                   key={artistId}
+                  onClick={()=> navigate(`/artist/${artistId}`)}
                   className="bg-white/10 backdrop-blur-md rounded-2xl shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 overflow-hidden"
                 >
                   {/* Cover Image */}
@@ -140,13 +143,6 @@ const GetAllArtists: React.FC = () => {
 
                     <p className="text-gray-200 mb-1 font-medium">{artist.genre}</p>
                     <p className="text-gray-300 text-sm line-clamp-3">{artist.bio}</p>
-
-                    <Link
-                      to={`/artist/${artistId}`}
-                      className="mt-5 inline-block text-yellow-400 font-semibold hover:text-yellow-300 hover:underline transition"
-                    >
-                      View Profile →
-                    </Link>
                   </div>
                 </div>
               );
