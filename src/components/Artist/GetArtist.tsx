@@ -10,7 +10,7 @@ import {
 } from "../../../redux/reducers/artistReducer/artistSlice";
 import { createConversation, fetchConversations } from "../../../redux/reducers/messageReducer/messageSlice";
 import { motion } from "framer-motion";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft, Menu, X } from "lucide-react";
 import { toast } from "react-toastify";
 
 const GetArtist: React.FC = () => {
@@ -18,6 +18,7 @@ const GetArtist: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const [chatLoading, setChatLoading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const { profile, loading, error } = useSelector((state: RootState) => state.artist);
   const { user } = useSelector((state: RootState) => state.auth);
@@ -108,39 +109,55 @@ const GetArtist: React.FC = () => {
             <ArrowLeft size={20} />
             <span>Back to All Artists</span>
           </button>
-          <div className="flex gap-4">
-            {user &&
-              profile.user &&
-              typeof profile.user !== "string" &&
-              user._id === profile.user._id && (
-                <>
-                  <button
-                    onClick={() => navigate(`/updateArtist/${profile._id}`)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2 rounded-full shadow-md transition-all"
-                  >
-                    ✏️ Update Profile
-                  </button>
-                  <button
-                    onClick={() => handleDelete(profile._id)}
-                    className="bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2 rounded-full shadow-md transition-all"
-                  >
-                    🗑️ Delete Profile
-                  </button>
-                </>
-              )}
-            {user &&
-              profile.user &&
-              typeof profile.user !== "string" &&
-              user._id !== profile.user._id && (
-                <button
-                  onClick={handleChatWithArtist}
-                  className="bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2 rounded-full shadow-md transition-all disabled:opacity-50"
-                  disabled={chatLoading}
-                >
-                  {chatLoading ? "Starting Chat..." : "💬 Chat with Artist"}
-                </button>
-              )}
+
+<div className="flex gap-4 items-center">
+  {user &&
+    profile.user &&
+    typeof profile.user !== "string" &&
+    user._id === profile.user._id && (
+      <div className="relative">
+        {/* Hamburger Icon */}
+        <button
+          onClick={() => setMenuOpen((prev) => !prev)}
+          className="p-2 bg-gray-800 hover:bg-gray-700 rounded-full transition"
+        >
+          <Menu className="text-yellow-400 w-6 h-6" />
+        </button>
+
+        {/* Dropdown Menu */}
+        {menuOpen && (
+          <div className="absolute right-0 mt-2 w-44 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-50">
+            <button
+              onClick={() => navigate(`/updateArtist/${profile._id}`)}
+              className="block w-full text-left px-4 py-2 text-sm text-yellow-400 hover:bg-gray-700"
+            >
+              ✏️ Update Profile
+            </button>
+            <button
+              onClick={() => handleDelete(profile._id)}
+              className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700"
+            >
+              🗑️ Delete Profile
+            </button>
           </div>
+        )}
+      </div>
+    )}
+
+  {user &&
+    profile.user &&
+    typeof profile.user !== "string" &&
+    user._id !== profile.user._id && (
+      <button
+        onClick={handleChatWithArtist}
+        className="bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2 rounded-full shadow-md transition-all disabled:opacity-50"
+        disabled={chatLoading}
+      >
+        {chatLoading ? "Starting Chat..." : "💬 Chat with Artist"}
+      </button>
+    )}
+</div>
+
         </div>
         {profile.coverImage && (
           <div className="relative w-full h-64 sm:h-80 md:h-96">

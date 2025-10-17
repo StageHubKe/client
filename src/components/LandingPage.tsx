@@ -29,17 +29,17 @@ const LandingPage = () => {
     if (user) dispatch(fetchUnreadCount());
   }, [dispatch, user]);
 
- useEffect(() => {
-  if (!user) return;
-  const handleUnreadCountUpdated = ({ count }: { count: number }) => {
-    dispatch(setUnreadCount(count));
-  };
-  const cleanup = () => {
-    socket.off("unread_count_updated", handleUnreadCountUpdated);
-  };
-  socket.on("unread_count_updated", handleUnreadCountUpdated);
-  return cleanup;
-}, [user, dispatch]);
+  useEffect(() => {
+    if (!user) return;
+    const handleUnreadCountUpdated = ({ count }: { count: number }) => {
+      dispatch(setUnreadCount(count));
+    };
+    const cleanup = () => {
+      socket.off("unread_count_updated", handleUnreadCountUpdated);
+    };
+    socket.on("unread_count_updated", handleUnreadCountUpdated);
+    return cleanup;
+  }, [user, dispatch]);
 
   const handleLogout = () => {
     dispatch(logoutUser());
@@ -77,7 +77,10 @@ const LandingPage = () => {
           <a href="#artists" className="hover:text-yellow-400 transition-all">
             Artists
           </a>
-          <a href="#howitworks" className="hover:text-yellow-400 transition-all">
+          <a
+            href="#howitworks"
+            className="hover:text-yellow-400 transition-all"
+          >
             How It Works
           </a>
           <a href="#contact" className="hover:text-yellow-400 transition-all">
@@ -159,9 +162,8 @@ const LandingPage = () => {
           className="md:w-1/2"
         >
           <h2 className="text-5xl md:text-6xl font-extrabold leading-tight mb-6">
-            Discover & Book{" "}
-            <span className="text-yellow-400">Top Artists</span> for Your Next
-            Event
+            Discover & Book <span className="text-yellow-400">Top Artists</span>{" "}
+            for Your Next Event
           </h2>
           <p className="text-gray-300 text-lg mb-10 leading-relaxed">
             Whether you're looking for <strong>performers</strong>,{" "}
@@ -231,7 +233,10 @@ const LandingPage = () => {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {[
-            { title: "Sign Up", desc: "Create your artist profile in minutes." },
+            {
+              title: "Sign Up",
+              desc: "Create your artist profile in minutes.",
+            },
             {
               title: "Showcase",
               desc: "Upload your work and highlight your talent.",

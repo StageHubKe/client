@@ -7,7 +7,9 @@ import { fetchAllPosters } from "../../../redux/reducers/posterReducer/posterSli
 const GigPosterList: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const { posters, loading, error } = useSelector((state: RootState) => state.poster);
+  const { posters, loading, error } = useSelector(
+    (state: RootState) => state.poster
+  );
 
   useEffect(() => {
     dispatch(fetchAllPosters());
@@ -32,7 +34,9 @@ const GigPosterList: React.FC = () => {
   if (!posters.length) {
     return (
       <div className="flex flex-col justify-center items-center h-[70vh]">
-        <p className="text-gray-500 text-lg mb-4">No gig posters available yet.</p>
+        <p className="text-gray-500 text-lg mb-4">
+          No gig posters available yet.
+        </p>
         <button
           onClick={() => navigate("/create-gig")}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
@@ -44,16 +48,18 @@ const GigPosterList: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-          <div className="flex">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-indigo-900 p-8">
+      <div className="flex">
         <button
           onClick={() => navigate("/")}
           className="bg-blue-600 text-white px-6 py-2 rounded-lg shadow hover:bg-blue-700 transition-transform hover:scale-105"
         >
           ← Back Home
         </button>
-        </div>
-      <h1 className="text-3xl font-bold mb-6 text-center">🎤 Available Gigs</h1>
+      </div>
+      <h1 className="text-3xl font-bold mb-6 text-white text-center">
+        🎤 Available Gigs
+      </h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {posters.map((poster) => (
@@ -77,14 +83,23 @@ const GigPosterList: React.FC = () => {
             <div className="p-4 space-y-2">
               <h2 className="text-xl font-semibold">{poster.eventName}</h2>
 
-              {poster.eventDate && (
+              {poster.eventStartDate && (
                 <p className="text-sm text-blue-600 font-medium">
-                  📅 {new Date(poster.eventDate).toLocaleDateString()}
+                  📅{" "}
+                  {poster.multiDay
+                    ? `${new Date(
+                        poster.eventStartDate
+                      ).toLocaleDateString()} - ${new Date(
+                        poster.eventEndDate
+                      ).toLocaleDateString()}`
+                    : new Date(poster.eventStartDate).toLocaleDateString()}
                 </p>
               )}
 
               <p className="text-gray-600">{poster.eventType}</p>
-              <p className="text-sm text-gray-500 truncate">{poster.eventDescription}</p>
+              <p className="text-sm text-gray-500 truncate">
+                {poster.eventDescription}
+              </p>
 
               {/* Status badge */}
               <span
@@ -96,10 +111,16 @@ const GigPosterList: React.FC = () => {
               </span>
 
               <div className="flex justify-between items-center mt-3">
-                <p className="text-green-600 font-medium">${poster.budget}</p>
+                <p className="text-green-600 font-medium">KSH.{poster.budget}</p>
                 <span className="text-sm text-gray-400">
                   {poster.eventPlannerName || "Unknown Planner"}
                 </span>
+              </div>
+              <div>
+
+                  <p className="mt-3 text-sm text-yellow-600 italic">
+                      📍 {poster.venueAddress || "Location not specified"}
+                    </p>
               </div>
             </div>
           </div>

@@ -22,7 +22,9 @@ export interface Poster {
   budget: number;
   eventPlannerName: string;
   contactInfo: string;
-  eventDate: string;
+  multiDay: boolean;     
+  eventStartDate: string;   
+  eventEndDate: string;      
   posterImage?: string;
   createdBy?: {
     _id: string;
@@ -32,6 +34,7 @@ export interface Poster {
   createdAt?: string;
   updatedAt?: string;
 }
+
 
 export interface PosterState {
   posters: Poster[];

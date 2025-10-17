@@ -12,6 +12,26 @@ import {
 const CLOUDINARY_UPLOAD_PRESET = "stagehub";
 const CLOUDINARY_CLOUD_NAME = "ddzndlcxn";
 
+interface FormData {
+  eventType: string;
+  artistCategory: string;
+  instrumentsProvided: boolean;
+  performerEquipment: string;
+  guestCount: number;
+  venueAddress: string;
+  eventName: string;
+  eventDescription: string;
+  performanceDuration: string;
+  planningStage: string;
+  budget: number;
+  eventPlannerName: string;
+  contactInfo: string;
+  eventStartDate: string;
+  eventEndDate: string;
+  multiDay: boolean;
+  status: "active" | "filled";
+}
+
 const CreateGigPoster: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
@@ -22,7 +42,8 @@ const CreateGigPoster: React.FC = () => {
   const [coverImage, setCoverImage] = useState<string>("");
   const inputRef = useRef<HTMLInputElement | null>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const [formData, setFormData] = useState({
+
+  const [formData, setFormData] = useState<FormData>({
     eventType: "",
     artistCategory: "",
     instrumentsProvided: false,
@@ -36,10 +57,13 @@ const CreateGigPoster: React.FC = () => {
     budget: 500,
     eventPlannerName: "",
     contactInfo: "",
-    eventDate: "",
+    eventStartDate: "",
+    eventEndDate: "",
+    multiDay: false,
     status: "active",
   });
 
+  // Google Places Autocomplete
   useEffect(() => {
     const interval = setInterval(() => {
       if (window.google && inputRef.current && !autocompleteRef.current) {
@@ -50,24 +74,36 @@ const CreateGigPoster: React.FC = () => {
             componentRestrictions: { country: "KE" },
           }
         );
-
         autocompleteRef.current.addListener("place_changed", () => {
           const place = autocompleteRef.current?.getPlace();
           if (place?.formatted_address) {
             setFormData((prev) => ({
               ...prev,
-              venueAddress: place?.formatted_address ?? prev.venueAddress,
+              venueAddress: place?.formatted_address ?? "",
             }));
           }
         });
-
         clearInterval(interval);
       }
     }, 500);
-
     return () => clearInterval(interval);
   }, []);
 
+  // Handle form input changes
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value, type } = e.target as HTMLInputElement;
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+    }));
+  };
+
+  // Upload poster image to Cloudinary
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -93,22 +129,35 @@ const CreateGigPoster: React.FC = () => {
     }
   };
 
-  // ========= HANDLE FORM CHANGE ========= //
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value, type } = e.target as HTMLInputElement;
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
-    }));
-  };
-
-  // ========= SUBMIT ========= //
+  // Submit poster
   const handleSubmit = async () => {
+    const requiredFields: (keyof FormData)[] = [
+      "eventType",
+      "artistCategory",
+      "guestCount",
+      "venueAddress",
+      "eventName",
+      "eventDescription",
+      "performanceDuration",
+      "planningStage",
+      "budget",
+      "eventPlannerName",
+      "contactInfo",
+      "eventStartDate",
+    ];
+
+    for (const field of requiredFields) {
+      if (!formData[field]) {
+        alert(`Please fill in the ${field} field.`);
+        return;
+      }
+    }
+
+    if (formData.multiDay && !formData.eventEndDate) {
+      alert("Please provide the event end date for multi-day events.");
+      return;
+    }
+
     const posterData = { ...formData, posterImage: coverImage };
     const resultAction = await dispatch(createPoster(posterData));
     if (createPoster.fulfilled.match(resultAction)) {
@@ -117,6 +166,27 @@ const CreateGigPoster: React.FC = () => {
     }
   };
 
+  // Reusable DatePicker field component
+  const DatePickerField: React.FC<{
+    label: string;
+    selectedDate: string;
+    onChange: (date: string) => void;
+  }> = ({ label, selectedDate, onChange }) => (
+    <div>
+      <label className="block text-sm text-gray-700">{label}</label>
+      <DatePicker
+        selected={selectedDate ? new Date(selectedDate) : null}
+        onChange={(date: Date | null) =>
+          onChange(date ? date.toISOString().split("T")[0] : "")
+        }
+        dateFormat="yyyy-MM-dd"
+        placeholderText={label}
+        className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-400"
+      />
+    </div>
+  );
+
+  // Render each step of the form
   const renderStep = () => {
     switch (step) {
       case 1:
@@ -125,7 +195,30 @@ const CreateGigPoster: React.FC = () => {
             <h2 className="text-xl font-semibold mb-2 text-center">
               🎭 Event Details
             </h2>
-
+            <div>
+              <label className="block mb-1 font-medium">Event Name</label>
+              <input
+                type="text"
+                name="eventName"
+                value={formData.eventName}
+                onChange={handleChange}
+                placeholder="Enter event name"
+                className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+            <div>
+              <label className="block mb-1 font-medium">
+                Event Description
+              </label>
+              <textarea
+                name="eventDescription"
+                value={formData.eventDescription}
+                onChange={handleChange}
+                placeholder="Enter a brief description of the event"
+                className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-400"
+                rows={4}
+              />
+            </div>
             <div>
               <label className="block mb-1 font-medium">Event Type</label>
               <select
@@ -147,7 +240,6 @@ const CreateGigPoster: React.FC = () => {
                 ))}
               </select>
             </div>
-
             <div>
               <label className="block mb-1 font-medium">Artist Category</label>
               <select
@@ -164,13 +256,13 @@ const CreateGigPoster: React.FC = () => {
                 )}
               </select>
             </div>
-
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
                 name="instrumentsProvided"
                 checked={formData.instrumentsProvided}
                 onChange={handleChange}
+                className="focus:ring-2 focus:ring-blue-400"
               />
               <label className="text-sm text-gray-600">
                 Instruments will be provided
@@ -183,24 +275,22 @@ const CreateGigPoster: React.FC = () => {
         return (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-center">🚚 Logistics</h2>
-
             <div>
               <label className="block mb-1 font-medium">Expected Guests</label>
               <input
                 type="range"
                 name="guestCount"
-                min="10"
-                max="1000"
-                step="10"
+                min={10}
+                max={1000}
+                step={10}
                 value={formData.guestCount}
                 onChange={handleChange}
-                className="w-full"
+                className="w-full focus:ring-2 focus:ring-blue-400"
               />
               <p className="text-sm text-gray-500">
                 {formData.guestCount} guests expected
               </p>
             </div>
-
             <div>
               <label className="block mb-1 font-medium">Venue Address</label>
               <input
@@ -213,7 +303,6 @@ const CreateGigPoster: React.FC = () => {
                 className="w-full border-gray-300 focus:ring-blue-500 focus:border-blue-500 border p-2 rounded-lg"
               />
             </div>
-
             <div>
               <label className="block mb-1 font-medium">
                 Performer Equipment
@@ -222,7 +311,7 @@ const CreateGigPoster: React.FC = () => {
                 name="performerEquipment"
                 value={formData.performerEquipment}
                 onChange={handleChange}
-                className="border p-2 w-full rounded"
+                className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-400"
               >
                 <option value="">Select equipment...</option>
                 <option value="Sound system">Sound System</option>
@@ -238,67 +327,88 @@ const CreateGigPoster: React.FC = () => {
         return (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-center">
-              🗓️ Event Overview
+              🗓️ Event Schedule
             </h2>
-
-            <input
-              type="text"
-              name="eventName"
-              placeholder="Event Name"
-              value={formData.eventName}
-              onChange={handleChange}
-              className="border p-2 w-full rounded"
-            />
-
-            <DatePicker
-              selected={
-                formData.eventDate ? new Date(formData.eventDate) : null
-              }
-              onChange={(date: Date | null) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  eventDate: date ? date.toISOString().split("T")[0] : "",
-                }))
-              }
-              dateFormat="yyyy-MM-dd"
-              placeholderText="Select event date"
-              className="border p-2 w-full rounded"
-            />
-
-            <select
-              name="performanceDuration"
-              value={formData.performanceDuration}
-              onChange={handleChange}
-              className="border p-2 w-full rounded"
-            >
-              {["1 hour", "2 hours", "3 hours", "Half Day", "Full Day"].map(
-                (d) => (
-                  <option key={d}>{d}</option>
-                )
-              )}
-            </select>
-
-            <select
-              name="planningStage"
-              value={formData.planningStage}
-              onChange={handleChange}
-              className="border p-2 w-full rounded"
-            >
-              <option value="">Select Planning Stage</option>
-              <option value="just getting started">Just Getting Started</option>
-              <option value="finalizing details">Finalizing Details</option>
-              <option value="ready to hire">Ready to Hire</option>
-              <option value="ongoing event">Ongoing Event</option>
-            </select>
-
-            <textarea
-              name="eventDescription"
-              placeholder="Describe the event..."
-              value={formData.eventDescription}
-              onChange={handleChange}
-              rows={3}
-              className="border p-2 w-full rounded"
-            />
+            <div className="flex items-center gap-2 mb-2">
+              <input
+                type="checkbox"
+                id="multiDay"
+                checked={formData.multiDay}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    multiDay: e.target.checked,
+                    eventStartDate: "",
+                    eventEndDate: "",
+                  }))
+                }
+                className="focus:ring-2 focus:ring-blue-400"
+              />
+              <label htmlFor="multiDay" className="text-sm text-gray-600">
+                Event spans multiple days
+              </label>
+            </div>
+            {formData.multiDay ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <DatePickerField
+                  label="Start Date"
+                  selectedDate={formData.eventStartDate}
+                  onChange={(date) =>
+                    setFormData((prev) => ({ ...prev, eventStartDate: date }))
+                  }
+                />
+                <DatePickerField
+                  label="End Date"
+                  selectedDate={formData.eventEndDate}
+                  onChange={(date) =>
+                    setFormData((prev) => ({ ...prev, eventEndDate: date }))
+                  }
+                />
+              </div>
+            ) : (
+              <DatePickerField
+                label="Event Date"
+                selectedDate={formData.eventStartDate}
+                onChange={(date) =>
+                  setFormData((prev) => ({ ...prev, eventStartDate: date }))
+                }
+              />
+            )}
+            <div>
+              <label className="block mb-1 font-medium">
+                Performance Duration
+              </label>
+              <select
+                name="performanceDuration"
+                value={formData.performanceDuration}
+                onChange={handleChange}
+                className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-400"
+              >
+                <option value="">Select duration...</option>
+                {["1 hour", "2 hours", "3 hours", "Half Day", "Full Day"].map(
+                  (d) => (
+                    <option key={d}>{d}</option>
+                  )
+                )}
+              </select>
+            </div>
+            <div>
+              <label className="block mb-1 font-medium">Planning Stage</label>
+              <select
+                name="planningStage"
+                value={formData.planningStage}
+                onChange={handleChange}
+                className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-400"
+              >
+                <option value="">Select Planning Stage</option>
+                <option value="just getting started">
+                  Just Getting Started
+                </option>
+                <option value="finalizing details">Finalizing Details</option>
+                <option value="ready to hire">Ready to Hire</option>
+                <option value="ongoing event">Ongoing Event</option>
+              </select>
+            </div>
           </div>
         );
 
@@ -308,46 +418,51 @@ const CreateGigPoster: React.FC = () => {
             <h2 className="text-xl font-semibold text-center">
               💰 Budget & Planner Info
             </h2>
-
             <div>
               <label className="block mb-1 font-medium">Budget (USD)</label>
               <input
                 type="range"
                 name="budget"
-                min="100"
-                max="5000"
-                step="50"
+                min={100}
+                max={5000}
+                step={50}
                 value={formData.budget}
                 onChange={handleChange}
-                className="w-full"
+                className="w-full focus:ring-2 focus:ring-blue-400"
               />
               <p className="text-sm text-gray-500">${formData.budget}</p>
             </div>
-
-            <input
-              type="text"
-              name="eventPlannerName"
-              placeholder="Planner Name"
-              value={formData.eventPlannerName}
-              onChange={handleChange}
-              className="border p-2 w-full rounded"
-            />
-
-            <input
-              type="text"
-              name="contactInfo"
-              placeholder="Contact Info (Email or Phone)"
-              value={formData.contactInfo}
-              onChange={handleChange}
-              className="border p-2 w-full rounded"
-            />
+            <div>
+              <label className="block mb-1 font-medium">
+                Event Planner Name
+              </label>
+              <input
+                type="text"
+                name="eventPlannerName"
+                placeholder="Planner Name"
+                value={formData.eventPlannerName}
+                onChange={handleChange}
+                className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+            <div>
+              <label className="block mb-1 font-medium">Contact Info</label>
+              <input
+                type="text"
+                name="contactInfo"
+                placeholder="Contact Info (Email or Phone)"
+                value={formData.contactInfo}
+                onChange={handleChange}
+                className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
             <div>
               <label className="block mb-1 font-medium">Status</label>
               <select
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                className="border p-2 w-full rounded"
+                className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-400"
               >
                 <option value="active">Active</option>
                 <option value="filled">Filled</option>
@@ -360,12 +475,17 @@ const CreateGigPoster: React.FC = () => {
         return (
           <div className="space-y-4 text-center">
             <h2 className="text-xl font-semibold mb-2">🖼️ Upload Poster</h2>
-            <input type="file" onChange={handleCoverUpload} />
-            {uploading && <p>Uploading...</p>}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleCoverUpload}
+              className="mx-auto"
+            />
+            {uploading && <p className="text-gray-500">Uploading...</p>}
             {coverImage && (
               <img
                 src={coverImage}
-                alt="poster"
+                alt="Poster Preview"
                 className="w-64 mx-auto rounded-lg shadow-md"
               />
             )}
@@ -418,7 +538,7 @@ const CreateGigPoster: React.FC = () => {
         )}
         {step === 5 && (
           <button
-            disabled={loading}
+            disabled={loading || uploading}
             onClick={handleSubmit}
             className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:bg-gray-400 transition"
           >

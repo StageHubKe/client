@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { useDispatch, useSelector } from "react-redux";
+import { useParams, useNavigate } from "react-router-dom";
 import type { AppDispatch, RootState } from "../../../redux/store";
 import {
   fetchPosterById,
@@ -13,19 +13,40 @@ import {
 const CLOUDINARY_UPLOAD_PRESET = "stagehub";
 const CLOUDINARY_CLOUD_NAME = "ddzndlcxn";
 
+interface FormData {
+  eventType: string;
+  artistCategory: string;
+  instrumentsProvided: boolean;
+  performerEquipment: string;
+  guestCount: number;
+  venueAddress: string;
+  eventName: string;
+  eventDescription: string;
+  performanceDuration: string;
+  planningStage: string;
+  budget: number;
+  eventPlannerName: string;
+  contactInfo: string;
+  eventStartDate: string;
+  eventEndDate: string;
+  multiDay: boolean;
+  status: "active" | "filled";
+}
+
 const EditGigPoster: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-
-  const { poster, loading, success } = useSelector(
+  const { poster, loading, error, success } = useSelector(
     (state: RootState) => state.poster
   );
 
   const [uploading, setUploading] = useState(false);
   const [coverImage, setCoverImage] = useState<string>("");
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     eventType: "",
     artistCategory: "",
     instrumentsProvided: false,
@@ -34,51 +55,54 @@ const EditGigPoster: React.FC = () => {
     venueAddress: "",
     eventName: "",
     eventDescription: "",
-    performanceDuration: "",
+    performanceDuration: "2 hours",
     planningStage: "",
     budget: 500,
     eventPlannerName: "",
     contactInfo: "",
-    eventDate: "",
+    eventStartDate: "",
+    eventEndDate: "",
+    multiDay: false,
     status: "active",
   });
 
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-
   // Initialize Google Places Autocomplete
   useEffect(() => {
-    if (window.google && inputRef.current) {
-      autocompleteRef.current = new google.maps.places.Autocomplete(
-        inputRef.current,
-        {
-          types: ["(cities)"],
-          componentRestrictions: { country: "KE" },
-        }
-      );
-
-      autocompleteRef.current.addListener("place_changed", () => {
-        const place = autocompleteRef.current?.getPlace();
-        if (place && place.formatted_address) {
-          setFormData((prev) => ({
-            ...prev,
-            venueAddress: place.formatted_address || prev.venueAddress,
-          }));
-        }
-      });
-    }
-
+    const interval = setInterval(() => {
+      if (window.google && inputRef.current && !autocompleteRef.current) {
+        autocompleteRef.current = new window.google.maps.places.Autocomplete(
+          inputRef.current,
+          {
+            types: ["(cities)"],
+            componentRestrictions: { country: "KE" },
+          }
+        );
+        autocompleteRef.current.addListener("place_changed", () => {
+          const place = autocompleteRef.current?.getPlace();
+          if (place?.formatted_address) {
+            setFormData((prev) => ({
+              ...prev,
+              venueAddress: place?.formatted_address ?? "",
+            }));
+          }
+        });
+        clearInterval(interval);
+      }
+    }, 500);
     return () => {
+      clearInterval(interval);
       if (autocompleteRef.current) {
         google.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
     };
   }, []);
 
+  // Fetch poster data
   useEffect(() => {
     if (id) dispatch(fetchPosterById(id));
   }, [id, dispatch]);
 
+  // Populate form with poster data
   useEffect(() => {
     if (poster) {
       setFormData({
@@ -90,18 +114,21 @@ const EditGigPoster: React.FC = () => {
         venueAddress: poster.venueAddress || "",
         eventName: poster.eventName || "",
         eventDescription: poster.eventDescription || "",
-        performanceDuration: poster.performanceDuration || "",
+        performanceDuration: poster.performanceDuration || "2 hours",
         planningStage: poster.planningStage || "",
         budget: poster.budget || 500,
         eventPlannerName: poster.eventPlannerName || "",
         contactInfo: poster.contactInfo || "",
-        eventDate: poster.eventDate || "",
-        status: poster.status || "active",
+        eventStartDate: poster.eventStartDate || "",
+        eventEndDate: poster.eventEndDate || "",
+        multiDay: poster.multiDay || false,
+        status: (poster.status as "active" | "filled") || "active",
       });
       setCoverImage(poster.posterImage || "");
     }
   }, [poster]);
 
+  // Handle navigation on successful update
   useEffect(() => {
     if (success) {
       navigate("/gig-posts");
@@ -109,30 +136,7 @@ const EditGigPoster: React.FC = () => {
     }
   }, [success, navigate, dispatch]);
 
-  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    const data = new FormData();
-    data.append("file", file);
-    data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-
-    try {
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-        { method: "POST", body: data }
-      );
-      const result = await res.json();
-      setCoverImage(result.secure_url);
-    } catch (err) {
-      alert("Image upload failed.");
-      console.error(err);
-    } finally {
-      setUploading(false);
-    }
-  };
-
+  // Handle form input changes
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -146,11 +150,86 @@ const EditGigPoster: React.FC = () => {
     }));
   };
 
+  // Upload poster image to Cloudinary
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const data = new FormData();
+    data.append("file", file);
+    data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+    data.append("resource_type", "image");
+
+    try {
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: "POST", body: data }
+      );
+      const result = await res.json();
+      setCoverImage(result.secure_url);
+    } catch (err) {
+      alert("Image upload failed. Try again.");
+      console.error(err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Submit updated poster
   const handleSubmit = async () => {
     if (!id) return;
+
+    const requiredFields: (keyof FormData)[] = [
+      "eventType",
+      "artistCategory",
+      "guestCount",
+      "venueAddress",
+      "eventName",
+      "eventDescription",
+      "performanceDuration",
+      "planningStage",
+      "budget",
+      "eventPlannerName",
+      "contactInfo",
+      "eventStartDate",
+    ];
+
+    for (const field of requiredFields) {
+      if (!formData[field]) {
+        alert(`Please fill in the ${field} field.`);
+        return;
+      }
+    }
+
+    if (formData.multiDay && !formData.eventEndDate) {
+      alert("Please provide the event end date for multi-day events.");
+      return;
+    }
+
     const updatedData = { ...formData, posterImage: coverImage };
     await dispatch(updatePoster({ id, data: updatedData }));
   };
+
+  // Reusable DatePicker field component
+  const DatePickerField: React.FC<{
+    label: string;
+    selectedDate: string;
+    onChange: (date: string) => void;
+  }> = ({ label, selectedDate, onChange }) => (
+    <div>
+      <label className="block text-sm text-gray-700 font-medium">{label}</label>
+      <DatePicker
+        selected={selectedDate ? new Date(selectedDate) : null}
+        onChange={(date: Date | null) =>
+          onChange(date ? date.toISOString().split("T")[0] : "")
+        }
+        dateFormat="yyyy-MM-dd"
+        placeholderText={label}
+        className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-400"
+      />
+    </div>
+  );
 
   return (
     <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8 mt-12 border border-gray-100">
@@ -184,7 +263,6 @@ const EditGigPoster: React.FC = () => {
               ))}
             </select>
           </div>
-
           <div>
             <label className="block font-medium mb-1 text-gray-700">
               Artist Category
@@ -217,77 +295,50 @@ const EditGigPoster: React.FC = () => {
           <span className="text-gray-700">Instruments Provided</span>
         </div>
 
-        {/* Event details */}
+        {/* Logistics */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="font-semibold">Performance Equipment</label>
-            <input
-              type="text"
+            <label className="block font-medium mb-1 text-gray-700">
+              Performer Equipment
+            </label>
+            <select
               name="performerEquipment"
-              placeholder="Performer Equipment"
               value={formData.performerEquipment}
               onChange={handleChange}
               className="w-full border-gray-300 focus:ring-blue-500 focus:border-blue-500 border p-2 rounded-lg"
-            />
+            >
+              <option value="">Select equipment...</option>
+              <option value="Sound system">Sound System</option>
+              <option value="Lighting">Lighting</option>
+              <option value="Stage setup">Stage Setup</option>
+              <option value="None">None</option>
+            </select>
           </div>
           <div>
-            <label className="font-semibold">Event Name</label>
+            <label className="block font-medium mb-1 text-gray-700">
+              Number of Guests
+            </label>
             <input
-              type="text"
-              name="eventName"
-              placeholder="Event Name"
-              value={formData.eventName}
-              onChange={handleChange}
-              className="w-full border-gray-300 focus:ring-blue-500 focus:border-blue-500 border p-2 rounded-lg"
-            />
-          </div>
-        </div>
-
-        {/* Description */}
-        <div>
-          <label className="font-semibold">Event Description</label>
-          <textarea
-            name="eventDescription"
-            placeholder="Event Description"
-            value={formData.eventDescription}
-            onChange={handleChange}
-            className="w-full border-gray-300 focus:ring-blue-500 focus:border-blue-500 border p-2 rounded-lg min-h-[100px]"
-          />
-        </div>
-
-        {/* Date & Guests */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="font-semibold">Event Date</label>
-            <DatePicker
-              selected={
-                formData.eventDate ? new Date(formData.eventDate) : null
-              }
-              onChange={(date: Date | null) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  eventDate: date ? date.toISOString().split("T")[0] : "",
-                }))
-              }
-              dateFormat="yyyy-MM-dd"
-              className="border-gray-300 focus:ring-blue-500 focus:border-blue-500 border p-2 w-full rounded-lg"
-            />
-          </div>
-          <div>
-            <label className="font-semibold">Number of Guests</label>
-            <input
-              type="number"
+              type="range"
               name="guestCount"
+              min={10}
+              max={1000}
+              step={10}
               value={formData.guestCount}
               onChange={handleChange}
-              className="w-full border-gray-300 focus:ring-blue-500 focus:border-blue-500 border p-2 rounded-lg"
+              className="w-full focus:ring-2 focus:ring-blue-400"
             />
+            <p className="text-sm text-gray-500">
+              {formData.guestCount} guests expected
+            </p>
           </div>
         </div>
 
-        {/* Venue with Autocomplete */}
+        {/* Venue */}
         <div>
-          <label className="font-semibold">Venue Address</label>
+          <label className="block font-medium mb-1 text-gray-700">
+            Venue Address
+          </label>
           <input
             ref={inputRef}
             type="text"
@@ -299,23 +350,145 @@ const EditGigPoster: React.FC = () => {
           />
         </div>
 
-        {/* Budget and Planner */}
+        {/* Event Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="font-semibold">Hiring Budget</label>
+            <label className="block font-medium mb-1 text-gray-700">
+              Event Name
+            </label>
             <input
-              type="number"
-              name="budget"
-              value={formData.budget}
+              type="text"
+              name="eventName"
+              placeholder="Event Name"
+              value={formData.eventName}
               onChange={handleChange}
               className="w-full border-gray-300 focus:ring-blue-500 focus:border-blue-500 border p-2 rounded-lg"
             />
           </div>
           <div>
-            <label className="font-semibold">Event Planner Name</label>
+            <label className="block font-medium mb-1 text-gray-700">
+              Event Description
+            </label>
+            <textarea
+              name="eventDescription"
+              placeholder="Event Description"
+              value={formData.eventDescription}
+              onChange={handleChange}
+              className="w-full border-gray-300 focus:ring-blue-500 focus:border-blue-500 border p-2 rounded-lg min-h-[100px]"
+            />
+          </div>
+        </div>
+
+        {/* Event Schedule */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <input
+              type="checkbox"
+              id="multiDay"
+              checked={formData.multiDay}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  multiDay: e.target.checked,
+                  eventStartDate: "",
+                  eventEndDate: "",
+                }))
+              }
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="multiDay" className="text-sm text-gray-600">
+              Event spans multiple days
+            </label>
+          </div>
+          {formData.multiDay ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <DatePickerField
+                label="Start Date"
+                selectedDate={formData.eventStartDate}
+                onChange={(date) =>
+                  setFormData((prev) => ({ ...prev, eventStartDate: date }))
+                }
+              />
+              <DatePickerField
+                label="End Date"
+                selectedDate={formData.eventEndDate}
+                onChange={(date) =>
+                  setFormData((prev) => ({ ...prev, eventEndDate: date }))
+                }
+              />
+            </div>
+          ) : (
+            <DatePickerField
+              label="Event Date"
+              selectedDate={formData.eventStartDate}
+              onChange={(date) =>
+                setFormData((prev) => ({ ...prev, eventStartDate: date }))
+              }
+            />
+          )}
+          <div>
+            <label className="block font-medium mb-1 text-gray-700">
+              Performance Duration
+            </label>
+            <select
+              name="performanceDuration"
+              value={formData.performanceDuration}
+              onChange={handleChange}
+              className="w-full border-gray-300 focus:ring-blue-500 focus:border-blue-500 border p-2 rounded-lg"
+            >
+              <option value="">Select duration...</option>
+              {["1 hour", "2 hours", "3 hours", "Half Day", "Full Day"].map(
+                (d) => (
+                  <option key={d}>{d}</option>
+                )
+              )}
+            </select>
+          </div>
+          <div>
+            <label className="block font-medium mb-1 text-gray-700">
+              Planning Stage
+            </label>
+            <select
+              name="planningStage"
+              value={formData.planningStage}
+              onChange={handleChange}
+              className="w-full border-gray-300 focus:ring-blue-500 focus:border-blue-500 border p-2 rounded-lg"
+            >
+              <option value="">Select Planning Stage</option>
+              <option value="just getting started">Just Getting Started</option>
+              <option value="finalizing details">Finalizing Details</option>
+              <option value="ready to hire">Ready to Hire</option>
+              <option value="ongoing event">Ongoing Event</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Budget & Planner */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block font-medium mb-1 text-gray-700">
+              Budget (USD)
+            </label>
+            <input
+              type="range"
+              name="budget"
+              min={100}
+              max={5000}
+              step={50}
+              value={formData.budget}
+              onChange={handleChange}
+              className="w-full focus:ring-2 focus:ring-blue-400"
+            />
+            <p className="text-sm text-gray-500">${formData.budget}</p>
+          </div>
+          <div>
+            <label className="block font-medium mb-1 text-gray-700">
+              Event Planner Name
+            </label>
             <input
               type="text"
               name="eventPlannerName"
+              placeholder="Planner Name"
               value={formData.eventPlannerName}
               onChange={handleChange}
               className="w-full border-gray-300 focus:ring-blue-500 focus:border-blue-500 border p-2 rounded-lg"
@@ -323,37 +496,45 @@ const EditGigPoster: React.FC = () => {
           </div>
         </div>
 
-        {/* Contact */}
-        <div>
-          <label className="font-semibold">Event Contact</label>
-          <input
-            type="text"
-            name="contactInfo"
-            value={formData.contactInfo}
-            onChange={handleChange}
-            className="w-full border-gray-300 focus:ring-blue-500 focus:border-blue-500 border p-2 rounded-lg"
-          />
-        </div>
-
-        {/* Status */}
-        <div>
-          <label className="font-semibold">Status</label>
-          <select
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            className="w-full border-gray-300 focus:ring-blue-500 focus:border-blue-500 border p-2 rounded-lg"
-          >
-            <option value="active">Active</option>
-            <option value="filled">Filled</option>
-          </select>
+        {/* Contact & Status */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block font-medium mb-1 text-gray-700">
+              Contact Info
+            </label>
+            <input
+              type="text"
+              name="contactInfo"
+              placeholder="Contact Info (Email or Phone)"
+              value={formData.contactInfo}
+              onChange={handleChange}
+              className="w-full border-gray-300 focus:ring-blue-500 focus:border-blue-500 border p-2 rounded-lg"
+            />
+          </div>
+          <div>
+            <label className="block font-medium mb-1 text-gray-700">
+              Status
+            </label>
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              className="w-full border-gray-300 focus:ring-blue-500 focus:border-blue-500 border p-2 rounded-lg"
+            >
+              <option value="active">Active</option>
+              <option value="filled">Filled</option>
+            </select>
+          </div>
         </div>
 
         {/* Image Upload */}
         <div className="pt-4">
-          <label className="font-semibold">Upload Poster Image</label>
+          <label className="block font-medium mb-1 text-gray-700">
+            Upload Poster Image
+          </label>
           <input
             type="file"
+            accept="image/*"
             onChange={handleCoverUpload}
             className="w-full border border-gray-300 rounded-lg p-2 mt-1"
           />
@@ -372,11 +553,13 @@ const EditGigPoster: React.FC = () => {
         {/* Submit */}
         <button
           onClick={handleSubmit}
-          disabled={loading}
-          className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white font-semibold px-6 py-3 rounded-xl shadow-md hover:opacity-90 transition-all duration-200 mt-4"
+          disabled={loading || uploading}
+          className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white font-semibold px-6 py-3 rounded-xl shadow-md hover:opacity-90 transition-all duration-200 mt-4 disabled:bg-gray-400"
         >
           {loading ? "Saving..." : "Save Changes"}
         </button>
+
+        {error && <p className="text-red-500 text-center mt-3">{error}</p>}
       </div>
     </div>
   );
