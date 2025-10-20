@@ -17,6 +17,13 @@ import CreateGigPoster from "./components/Poster/CreateGigPoster";
 import GigPosterList from "./components/Poster/GigPosterList";
 import GigPosterDetails from "./components/Poster/GigPosterDetails";
 import EditGigPoster from "./components/Poster/EditGigPoster";
+import SingleBid from "./components/Bids/SingleBid";
+// import MyBids from "./components/Bids/MyBids";
+import MyBidsList from "./components/Bids/MyBidsList";
+import { useDispatch} from "react-redux";
+import { useEffect } from "react";
+import { fetchCurrentUser } from "../redux/reducers/authReducer/authSlice";
+import type { AppDispatch} from "../redux/store";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAP_SECRET_KEY;
 
@@ -28,6 +35,11 @@ const WithGoogleMaps = ({ children }: { children: React.ReactNode }) => (
 );
 
 const App = () => {
+  const dispatch = useDispatch<AppDispatch>();
+
+  useEffect(() => {
+    dispatch(fetchCurrentUser());
+  }, [dispatch]);
   console.log("Google Maps API Key Loaded:", GOOGLE_MAPS_API_KEY);
 
   return (
@@ -80,6 +92,8 @@ const App = () => {
           </WithGoogleMaps>
         }
       />
+      <Route path="/bid/:bidId" element={<SingleBid />} />
+      <Route path="/my-bids" element={<MyBidsList />} />
     </Routes>
   );
 };

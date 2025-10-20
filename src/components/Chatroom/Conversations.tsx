@@ -13,22 +13,25 @@ import {
 
 import type { AppDispatch, RootState } from "../../../redux/store";
 import { subscribeToMessageRead, subscribeToMessages } from "../../socket";
+import { fetchCurrentUser } from "../../../redux/reducers/authReducer/authSlice";
 
 const Conversations: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, loading: authLoading } = useSelector(
+    (state: RootState) => state.auth
+  );
   const { conversations, messages, loading, error } = useSelector(
     (state: RootState) => state.messages
   );
 
-  // Fetch conversations and unread counts
   useEffect(() => {
     if (!user) {
-      navigate("/login");
-      toast.warn("Please log in to view conversations");
-      return;
+      dispatch(fetchCurrentUser());
     }
+  }, [dispatch, navigate, user]);
+
+  useEffect(() => {
 
     const loadConversations = async () => {
       const result = await dispatch(fetchConversations());
@@ -41,13 +44,9 @@ const Conversations: React.FC = () => {
 
     loadConversations();
   }, [dispatch, navigate, user]);
-
-  // Display error toasts
   useEffect(() => {
     if (error) toast.error(error);
   }, [error]);
-
-  // Subscribe to socket events
   useEffect(() => {
     if (!user) return;
 
@@ -83,6 +82,17 @@ const Conversations: React.FC = () => {
     },
     [messages, user]
   );
+
+  if (authLoading)
+    return (
+      <p className="text-center mt-10 text-blue-500">Loading user info...</p>
+    );
+  if (!user)
+    return (
+      <p className="text-center mt-10 text-red-500">
+        Please log in to view this bid.
+      </p>
+    );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 text-white py-10 px-6">

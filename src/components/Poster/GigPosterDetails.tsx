@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import type { AppDispatch, RootState } from "../../../redux/store";
 import {
   deletePoster,
   fetchPosterById,
 } from "../../../redux/reducers/posterReducer/posterSlice";
+import { placeBid, getUserBids } from "../../../redux/reducers/bidReducer/bidSlice";
 import { Menu } from "lucide-react";
 
 const GigPosterDetails: React.FC = () => {
@@ -17,13 +18,29 @@ const GigPosterDetails: React.FC = () => {
     (state: RootState) => state.poster
   );
   const { user } = useSelector((state: RootState) => state.auth);
+  const { userBids, loading: bidLoading, message, error: bidError } = useSelector(
+    (state: RootState) => state.bid
+  );
 
   const [showModal, setShowModal] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showBidForm, setShowBidForm] = useState(false);
+
+  // Bid form fields
+  const [agreedToBudget, setAgreedToBudget] = useState(true);
+  const [proposedBudget, setProposedBudget] = useState<number | undefined>(undefined);
+  const [reason, setReason] = useState("");
+
+  // Check if a bid exists for this gig by the current user
+  const hasBid = userBids.some(
+    (bid: { gig: string | { _id: string }; bidder: { _id: string } }) =>
+      (typeof bid.gig === "string" ? bid.gig : bid.gig._id) === id && bid.bidder._id === user?._id
+  );
 
   useEffect(() => {
     if (id) dispatch(fetchPosterById(id));
-  }, [id, dispatch]);
+    if (user?._id) dispatch(getUserBids());
+  }, [id, user, dispatch]);
 
   const handleDelete = async () => {
     const confirmDelete = window.confirm(
@@ -31,14 +48,38 @@ const GigPosterDetails: React.FC = () => {
     );
     if (!confirmDelete) return;
 
-    if (poster) {
-      await dispatch(deletePoster(poster._id!));
+    if (poster && poster._id) {
+      await dispatch(deletePoster(poster._id));
       navigate("/gig-posts");
     }
   };
 
   const handleEdit = () => {
     if (poster && poster._id) navigate(`/edit-gig/${poster._id}`);
+  };
+
+  const handleViewBids = () => {
+    if (poster && poster._id) navigate(`/bids/${poster._id}`);
+  };
+
+  const handleSubmitBid = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!poster?._id) return;
+
+    const bidData = {
+      gigId: poster._id,
+      agreedToBudget,
+      proposedBudget: agreedToBudget ? poster.budget : proposedBudget,
+      reason: reason || undefined,
+    };
+
+    await dispatch(placeBid(bidData));
+
+    setShowBidForm(false);
+    setReason("");
+    setProposedBudget(undefined);
+    setAgreedToBudget(true);
+    dispatch(getUserBids());
   };
 
   if (loading)
@@ -57,7 +98,6 @@ const GigPosterDetails: React.FC = () => {
 
   if (!poster) return null;
 
-  // Format the date(s)
   const formattedDate = poster.multiDay
     ? `${new Date(poster.eventStartDate).toLocaleDateString("en-US", {
         weekday: "long",
@@ -117,6 +157,12 @@ const GigPosterDetails: React.FC = () => {
                 >
                   🗑️ Delete Poster
                 </button>
+                <button
+                  onClick={handleViewBids}
+                  className="block w-full text-left px-4 py-2 text-sm text-yellow-400 hover:bg-gray-700"
+                >
+                  📋 View Bids
+                </button>
               </div>
             )}
           </div>
@@ -141,7 +187,7 @@ const GigPosterDetails: React.FC = () => {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Image Modal */}
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
@@ -239,13 +285,104 @@ const GigPosterDetails: React.FC = () => {
             </li>
             {poster.createdBy && (
               <li>
-                <strong>Created By:</strong> {poster.createdBy.name} (
-                {poster.createdBy.email})
+                <strong>Created By:</strong>{" "}
+                <Link
+                  to={`/artist/${poster.createdBy._id}`}
+                  className="text-blue-500 hover:underline"
+                >
+                  {poster.createdBy.name}
+                </Link>{" "}
+                ({poster.createdBy.email})
               </li>
             )}
           </ul>
         </div>
       </div>
+
+      {/* Bid Section */}
+      {!isCreator && (
+        <div className="flex justify-center mb-10">
+          <button
+            onClick={() => setShowBidForm(true)}
+            disabled={hasBid}
+            className={`bg-yellow-500 text-gray-900 font-semibold px-6 py-3 rounded-xl shadow-md transition-transform ${
+              hasBid
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-yellow-400 hover:scale-105"
+            }`}
+          >
+            💰 {hasBid ? "Bid Already Placed" : "Place a Bid"}
+          </button>
+        </div>
+      )}
+
+      {/* Bid Modal Form */}
+      {showBidForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="bg-gray-900 p-8 rounded-2xl w-[90%] max-w-md border border-gray-700 shadow-xl relative">
+            <button
+              onClick={() => setShowBidForm(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-white text-2xl"
+            >
+              ✕
+            </button>
+            <h2 className="text-2xl text-yellow-400 mb-4 font-semibold">
+              Place Your Bid
+            </h2>
+
+            <form onSubmit={handleSubmitBid} className="space-y-4">
+              <div>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={agreedToBudget}
+                    onChange={(e) => setAgreedToBudget(e.target.checked)}
+                    className="w-5 h-5"
+                  />
+                  <span>I agree to the gig’s budget (KSH {poster.budget})</span>
+                </label>
+              </div>
+
+              {!agreedToBudget && (
+                <>
+                  <div>
+                    <label className="block mb-1 text-gray-300">Your Proposed Budget (KSH)</label>
+                    <input
+                      type="number"
+                      value={proposedBudget ?? ""}
+                      onChange={(e) => setProposedBudget(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-gray-100 focus:ring-2 focus:ring-yellow-400 outline-none"
+                      placeholder="Enter your proposed amount"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-gray-300">Reason / Notes (Optional)</label>
+                    <textarea
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-gray-100 focus:ring-2 focus:ring-yellow-400 outline-none"
+                      rows={4}
+                      placeholder="Explain your offer (optional)..."
+                    />
+                  </div>
+                </>
+              )}
+
+              <button
+                type="submit"
+                disabled={bidLoading}
+                className="w-full bg-yellow-500 text-gray-900 font-semibold py-2 rounded-md hover:bg-yellow-400 transition"
+              >
+                {bidLoading ? "Submitting..." : "Submit Bid"}
+              </button>
+
+              {bidError && <p className="text-red-400 text-sm">{bidError}</p>}
+              {message && <p className="text-green-400 text-sm">{message}</p>}
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

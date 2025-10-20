@@ -27,6 +27,7 @@ import {
 
 import type { AppDispatch, RootState } from "../../../redux/store";
 import type { User } from "../../types";
+import { fetchCurrentUser } from "../../../redux/reducers/authReducer/authSlice";
 
 const ChatRoom: React.FC = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -46,6 +47,10 @@ const ChatRoom: React.FC = () => {
     (state: RootState) => state.auth.user
   ) as User | null;
 
+  const { loading: authLoading } = useSelector(
+    (state: RootState) => state.auth
+  );
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const currentMessages = conversationId ? messages[conversationId] || [] : [];
   const participantName = conversationId
@@ -56,6 +61,12 @@ const ChatRoom: React.FC = () => {
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      dispatch(fetchCurrentUser());
+    }
+  }, [dispatch, navigate, user]);
 
   useEffect(() => {
     scrollToBottom();
@@ -112,7 +123,6 @@ const ChatRoom: React.FC = () => {
   /** Verify conversation + fetch messages */
   const verifyConversation = useCallback(async () => {
     if (!user || !conversationId) {
-      navigate("/login");
       toast.error("Please log in to view this chat");
       return;
     }
@@ -252,7 +262,16 @@ const ChatRoom: React.FC = () => {
       toast.error(err.message || "Failed to send message");
     }
   }, [text, user, conversationId, editingMessageId, dispatch]);
-
+  if (authLoading)
+    return (
+      <p className="text-center mt-10 text-blue-500">Loading user info...</p>
+    );
+  if (!user)
+    return (
+      <p className="text-center mt-10 text-red-500">
+        Please log in to view this bid.
+      </p>
+    );
   return (
     <div className="flex flex-col h-[85vh] bg-gray-900 rounded-xl overflow-hidden shadow-lg max-w-3xl mx-auto">
       {/* Header */}

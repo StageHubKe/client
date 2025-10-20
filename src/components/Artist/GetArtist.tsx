@@ -12,6 +12,7 @@ import { createConversation, fetchConversations } from "../../../redux/reducers/
 import { motion } from "framer-motion";
 import { ArrowLeft, Menu, X } from "lucide-react";
 import { toast } from "react-toastify";
+import { fetchCurrentUser } from "../../../redux/reducers/authReducer/authSlice";
 
 const GetArtist: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,7 +22,7 @@ const GetArtist: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const { profile, loading, error } = useSelector((state: RootState) => state.artist);
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, loading: authLoading } = useSelector((state: RootState) => state.auth);
   const { conversations } = useSelector((state: RootState) => state.messages);
 
   const [selectedVideo, setSelectedVideo] = useState<{
@@ -30,9 +31,14 @@ const GetArtist: React.FC = () => {
     description?: string;
   } | null>(null);
 
-  useEffect(() => {
-    if (!user) navigate("/login", { replace: true });
-  }, [user, navigate]);
+
+    // Fetch current user on mount if not loaded
+    useEffect(() => {
+      if (!user) {
+        dispatch(fetchCurrentUser());
+      }
+    }, [dispatch, user]);
+
 
   useEffect(() => {
     if (id && user) {
@@ -80,8 +86,14 @@ const GetArtist: React.FC = () => {
       setChatLoading(false);
     }
   };
+  if (authLoading) return <p className="text-center mt-10 text-blue-500">Loading user info...</p>;
+  if (!user)
+    return (
+      <p className="text-center mt-10 text-red-500">
+        Please log in to view this bid.
+      </p>
+    );
 
-  if (!user) return null;
   if (!id)
     return <p className="text-center mt-10 text-red-500">Invalid artist ID.</p>;
   if (loading)

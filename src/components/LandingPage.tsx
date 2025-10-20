@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import Footer from "./footer";
+import type { AppDispatch, RootState } from "../../redux/store";
 import {
   fetchCurrentUser,
   logoutUser,
@@ -9,10 +13,7 @@ import {
   fetchUnreadCount,
   setUnreadCount,
 } from "../../redux/reducers/messageReducer/messageSlice";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import Footer from "./footer";
-import type { AppDispatch, RootState } from "../../redux/store";
+import { fetchNotifications, addNotification } from "../../redux/reducers/notificationReducer/notificationSlice";
 import { socket } from "../socket";
 
 const LandingPage = () => {
@@ -21,24 +22,56 @@ const LandingPage = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { allProfiles } = useSelector((state: RootState) => state.artist);
   const { unreadCount } = useSelector((state: RootState) => state.messages);
+  const { notifications,error: notificationsError } = useSelector(
+    (state: RootState) => state.notification
+  );
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     dispatch(fetchCurrentUser());
     dispatch(getAllArtistProfiles());
-    if (user) dispatch(fetchUnreadCount());
+    if (user) {
+      dispatch(fetchUnreadCount());
+      dispatch(fetchNotifications());
+    }
   }, [dispatch, user]);
 
   useEffect(() => {
     if (!user) return;
+
     const handleUnreadCountUpdated = ({ count }: { count: number }) => {
       dispatch(setUnreadCount(count));
     };
-    const cleanup = () => {
-      socket.off("unread_count_updated", handleUnreadCountUpdated);
+
+    const handleNewNotification = (notification: {
+      message: string;
+      bidderId: string;
+      bidderName: string;
+      gigId: string;
+      read: boolean;
+    }) => {
+      dispatch(
+        addNotification({
+          _id: Date.now().toString(),
+          recipient: user._id,
+          message: notification.message,
+          bidderId: notification.bidderId,
+          bidderName: notification.bidderName,
+          gigId: notification.gigId,
+          type: "bid",
+          read: notification.read,
+          createdAt: new Date().toISOString(),
+        })
+      );
     };
+
     socket.on("unread_count_updated", handleUnreadCountUpdated);
-    return cleanup;
+    socket.on("new_notification", handleNewNotification);
+
+    return () => {
+      socket.off("unread_count_updated", handleUnreadCountUpdated);
+      socket.off("new_notification", handleNewNotification);
+    };
   }, [user, dispatch]);
 
   const handleLogout = () => {
@@ -141,6 +174,32 @@ const LandingPage = () => {
                     </span>
                   </button>
                   <button
+                    onClick={() => navigate("/my-bids")}
+                    className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+                  >
+                    My Bids
+                  </button>
+                
+                  {notificationsError && (
+                    <p className="px-5 py-2 text-sm text-red-400">
+                      Error loading notifications
+                    </p>
+                  )}
+                  {notifications.length > 0 && (
+                    <div className="border-t border-gray-700">
+                      <p className="px-5 py-2 text-sm text-gray-400">Notifications</p>
+                      {notifications.slice(0, 3).map((notification) => (
+                        <button
+                          key={notification._id}
+                          onClick={() => navigate(`/artist/${notification.bidderId}`)}
+                          className="block w-full text-left px-5 py-2 text-sm text-yellow-400 hover:bg-gray-700"
+                        >
+                          {notification.message}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <button
                     onClick={handleLogout}
                     className="block w-full text-left px-5 py-2 text-red-400 hover:bg-gray-700 transition"
                   >
@@ -190,6 +249,14 @@ const LandingPage = () => {
             >
               Create Gig
             </button>
+            {user && (
+              <button
+                onClick={() => navigate("/my-bids")}
+                className="border border-yellow-400 px-6 py-3 rounded-full font-bold hover:bg-yellow-400 hover:text-black transition-all"
+              >
+                View My Bids
+              </button>
+            )}
             {user && !hasProfile && (
               <button
                 onClick={() => navigate("/createArtist")}
