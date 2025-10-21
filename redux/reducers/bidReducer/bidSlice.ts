@@ -24,7 +24,7 @@ export interface Bid {
   agreedToBudget: boolean;
   proposedBudget: number;
   reason?: string;
-  status: "pending" | "accepted" | "rejected";
+  status: "pending" | "accepted" | "rejected" | "unsuccessful";
   createdAt: string;
   updatedAt?: string;
 }
@@ -114,7 +114,7 @@ export const getUserBids = createAsyncThunk<
 // 🟣 Update bid status
 export const updateBidStatus = createAsyncThunk<
   { bid: Bid; message: string },
-  { bidId: string; status: "pending" | "accepted" | "rejected" },
+  { bidId: string; status: "pending" | "accepted" | "rejected" | "unsuccessful" },
   { rejectValue: string }
 >("bid/updateBidStatus", async ({ bidId, status }, { rejectWithValue }) => {
   try {

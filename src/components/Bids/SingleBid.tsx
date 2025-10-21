@@ -127,9 +127,26 @@ const SingleBid: React.FC = () => {
       ? selectedBid.gig.budget
       : poster?.budget;
 
-  const handleStatusChange = (status: "accepted" | "rejected") => {
-    dispatch(updateBidStatus({ bidId: selectedBid._id, status }));
-  };
+  const handleStatusChange = async (
+  status: "accepted" | "rejected" | "unsuccessful"
+) => {
+  if (!selectedBid?._id) return;
+
+  try {
+    const resultAction = await dispatch(
+      updateBidStatus({
+        bidId: selectedBid._id,
+        status,
+      })
+    ).unwrap();
+
+    console.log("✅ Bid status updated:", resultAction);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    console.error("❌ Failed to update bid status:", err);
+  }
+};
+
   const artistId = profile?._id ?? "";
   const handleViewArtist = () => {
     navigate(`/artist/${artistId}`);
@@ -209,6 +226,18 @@ const SingleBid: React.FC = () => {
                     </span>{" "}
                     tab for updates.
                   </p>
+
+                  {poster?.performanceDuration && (
+                    <div className="mt-4 bg-white border border-green-100 rounded-2xl px-5 py-3 shadow-sm w-full sm:w-3/4">
+                      <div className="flex items-center justify-center gap-2 text-green-800 font-medium">
+                        <Clock className="text-green-500" size={18} />
+                        Performance Duration:{" "}
+                        <span className="font-semibold ml-1">
+                          {poster.performanceDuration}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -269,24 +298,53 @@ const SingleBid: React.FC = () => {
                 </div>
               </div>
             )}
-            <div className="flex flex-col gap-4 pt-6 border-t border-gray-200">
-              {selectedBid.status === "pending" && isGigCreator && (
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <button
-                    onClick={() => handleStatusChange("accepted")}
-                    className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-green-600 text-white font-semibold rounded-2xl hover:bg-green-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                  >
-                    <CheckCircle size={20} /> Accept Bid
-                  </button>
-                  <button
-                    onClick={() => handleStatusChange("rejected")}
-                    className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-red-600 text-white font-semibold rounded-2xl hover:bg-red-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                  >
-                    <XCircle size={20} /> Reject Bid
-                  </button>
-                </div>
-              )}
-            </div>
+          <div className="flex flex-col gap-4 pt-6 border-t border-gray-200">
+  {isGigCreator && (
+    <div className="flex flex-wrap justify-center gap-3">
+      {["accepted", "rejected", "unsuccessful"].map((statusOption) => {
+        const isActive = selectedBid.status === statusOption;
+        const baseStyle =
+          "flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-semibold shadow-md transition-all";
+        const activeStyles: Record<string, string> = {
+          accepted: "bg-green-600 text-white shadow-lg scale-105",
+          rejected: "bg-red-600 text-white shadow-lg scale-105",
+          filled: "bg-yellow-500 text-white shadow-lg scale-105",
+        };
+        const inactiveStyles: Record<string, string> = {
+          accepted:
+            "bg-green-50 text-green-700 hover:bg-green-100 border border-green-200",
+          rejected:
+            "bg-red-50 text-red-700 hover:bg-red-100 border border-red-200",
+          filled:
+            "bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200",
+        };
+
+        const icons: Record<string, React.ReactNode> = {
+          accepted: <CheckCircle size={18} />,
+          rejected: <XCircle size={18} />,
+          filled: <Clock size={18} />,
+        };
+
+        return (
+          <button
+            key={statusOption}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            onClick={() => handleStatusChange(statusOption as any)}
+            className={`${baseStyle} ${
+              isActive
+                ? activeStyles[statusOption]
+                : inactiveStyles[statusOption]
+            }`}
+          >
+            {icons[statusOption]}
+            {statusOption.charAt(0).toUpperCase() + statusOption.slice(1)}
+          </button>
+        );
+      })}
+    </div>
+  )}
+</div>
+
           </div>
         </div>
       </div>
