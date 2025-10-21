@@ -15,7 +15,7 @@ import {
   MessageCircle,
   Clock,
 } from "lucide-react";
-import { getArtistProfileById } from "../../../redux/reducers/artistReducer/artistSlice";
+import { getArtistProfileByUserId } from "../../../redux/reducers/artistReducer/artistSlice";
 
 const StatusBadge = ({ status }: { status: string }) => {
   const colors =
@@ -54,12 +54,12 @@ const SingleBid: React.FC = () => {
   );
 
   const { profile } = useSelector((state: RootState) => state.artist);
-  console.log("profile", profile);
 
   useEffect(() => {
-    const id = profile?._id ?? "";
-    dispatch(getArtistProfileById(id));
-  }, [dispatch, profile]);
+    if (selectedBid?.bidder?._id) {
+      dispatch(getArtistProfileByUserId(selectedBid.bidder._id));
+    }
+  }, [dispatch, selectedBid]);
 
   useEffect(() => {
     if (!user) dispatch(fetchCurrentUser());
