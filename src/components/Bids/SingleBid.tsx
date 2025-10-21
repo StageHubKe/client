@@ -192,6 +192,27 @@ const SingleBid: React.FC = () => {
                 </div>
               </div>
             )}
+            {/* Message for successful bidder */}
+            {selectedBid.status === "accepted" && isBidder && (
+              <div className="mt-6 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-6 text-center shadow-sm">
+                <div className="flex flex-col items-center gap-3">
+                  <CheckCircle className="text-green-600" size={28} />
+                  <h3 className="text-lg font-semibold text-green-800">
+                    Congratulations! 🎉 Your bid was successful.
+                  </h3>
+                  <p className="text-sm text-green-700 max-w-md">
+                    The event organizers have accepted your bid and will contact
+                    you soon through StageHub’s messaging chat for the next
+                    steps. Please keep an eye on your{" "}
+                    <span className="font-semibold text-green-800">
+                      Messages
+                    </span>{" "}
+                    tab for updates.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -241,7 +262,7 @@ const SingleBid: React.FC = () => {
             {selectedBid.reason && (
               <div className="bg-indigo-50 rounded-2xl p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  💭 Reason for Bid
+                  💭 Reason for Bid Review Budget
                 </h3>
                 <div className="bg-white rounded-xl p-4 shadow-sm">
                   <p className="text-gray-700 italic">"{selectedBid.reason}"</p>

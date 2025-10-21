@@ -273,9 +273,9 @@ const ChatRoom: React.FC = () => {
       </p>
     );
   return (
-    <div className="flex flex-col h-[85vh] bg-gray-900 rounded-xl overflow-hidden shadow-lg max-w-3xl mx-auto">
+    <div className="flex flex-col h-screen sm:h-[90vh] md:h-[85vh] bg-gray-900 rounded-none sm:rounded-xl overflow-hidden shadow-lg w-full max-w-[100vw] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto sm:my-4">
       {/* Header */}
-      <div className="flex items-center justify-between bg-gray-800 p-4 border-b border-gray-700">
+      <div className="flex items-center justify-between bg-gray-800 p-3 sm:p-4 border-b border-gray-700">
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate("/conversations")}

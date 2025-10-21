@@ -15,6 +15,7 @@ import {
 } from "../../redux/reducers/messageReducer/messageSlice";
 import { fetchNotifications, addNotification } from "../../redux/reducers/notificationReducer/notificationSlice";
 import { socket } from "../socket";
+import { Menu, X, MessageCircle } from "lucide-react";
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -22,9 +23,6 @@ const LandingPage = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { allProfiles } = useSelector((state: RootState) => state.artist);
   const { unreadCount } = useSelector((state: RootState) => state.messages);
-  const { notifications,error: notificationsError } = useSelector(
-    (state: RootState) => state.notification
-  );
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -105,24 +103,76 @@ const LandingPage = () => {
           StageHub<span className="text-white">.</span>
         </h1>
 
-        {/* Nav Links */}
-        <div className="hidden md:flex gap-8 text-lg font-medium">
-          <a href="#artists" className="hover:text-yellow-400 transition-all">
-            Artists
-          </a>
-          <a
-            href="#howitworks"
-            className="hover:text-yellow-400 transition-all"
-          >
+        {/* Desktop/Medium Menu */}
+        <div className="hidden md:flex items-center gap-8 text-lg font-medium">
+          <div className="relative group">
+            <button className="hover:text-yellow-400 transition-all">
+              Explore
+            </button>
+            <div className="absolute left-0 mt-2 w-48 bg-gray-800 rounded-xl shadow-xl py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+              <button
+                onClick={() => navigate("/getAllArtists")}
+                className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+              >
+                Explore Artists
+              </button>
+              <button
+                onClick={() => navigate("/gig-posts")}
+                className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+              >
+                Explore Gigs
+              </button>
+              <button
+                onClick={() => navigate("/create-gig")}
+                className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+              >
+                Create Gig
+              </button>
+              {user && (
+                <button
+                  onClick={() => navigate("/my-bids")}
+                  className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+                >
+                  View My Bids
+                </button>
+              )}
+            </div>
+          </div>
+          <a href="#howitworks" className="hover:text-yellow-400 transition-all">
             How It Works
           </a>
           <a href="#contact" className="hover:text-yellow-400 transition-all">
             Contact
           </a>
+          {user && (
+            <button
+              onClick={() => navigate("/conversations")}
+              className="flex items-center gap-2 hover:text-yellow-400 transition"
+            >
+              <MessageCircle size={20} />
+              <span>Messages</span>
+              {unreadCount > 0 && (
+                <span className="bg-yellow-400 text-black text-xs font-bold px-2 py-0.5 rounded-full">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Mobile Hamburger Menu */}
+        <div className="md:hidden flex items-center">
+          <button
+            onClick={() => setMenuOpen((prev) => !prev)}
+            className="text-white"
+            aria-label="Toggle menu"
+          >
+            {menuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
 
         {/* Auth Section */}
-        <div className="relative flex items-center">
+        <div className="hidden md:flex items-center">
           {!user ? (
             <button
               onClick={() => navigate("/login")}
@@ -131,7 +181,7 @@ const LandingPage = () => {
               Get Started
             </button>
           ) : (
-            <div>
+            <div className="relative">
               <button
                 onClick={() => setMenuOpen((prev) => !prev)}
                 className="flex items-center gap-2 border border-yellow-400 px-4 py-2 rounded-full hover:bg-yellow-400 hover:text-black transition font-semibold"
@@ -165,40 +215,11 @@ const LandingPage = () => {
                     </button>
                   )}
                   <button
-                    onClick={() => navigate("/conversations")}
-                    className="flex justify-between items-center w-full text-left px-5 py-2 hover:bg-gray-700 transition"
-                  >
-                    <span>Messages</span>
-                    <span className="bg-yellow-400 text-black text-xs font-bold px-2 py-0.5 rounded-full">
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                  </button>
-                  <button
                     onClick={() => navigate("/my-bids")}
                     className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
                   >
                     My Bids
                   </button>
-                
-                  {notificationsError && (
-                    <p className="px-5 py-2 text-sm text-red-400">
-                      Error loading notifications
-                    </p>
-                  )}
-                  {notifications.length > 0 && (
-                    <div className="border-t border-gray-700">
-                      <p className="px-5 py-2 text-sm text-gray-400">Notifications</p>
-                      {notifications.slice(0, 3).map((notification) => (
-                        <button
-                          key={notification._id}
-                          onClick={() => navigate(`/artist/${notification.bidderId}`)}
-                          className="block w-full text-left px-5 py-2 text-sm text-yellow-400 hover:bg-gray-700"
-                        >
-                          {notification.message}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-5 py-2 text-red-400 hover:bg-gray-700 transition"
@@ -210,6 +231,84 @@ const LandingPage = () => {
             </div>
           )}
         </div>
+
+        {/* Mobile Menu */}
+        {menuOpen && (
+          <div className="md:hidden absolute top-16 left-0 right-0 bg-gray-800 rounded-b-xl shadow-xl py-4 z-50 animate-fadeIn">
+            <button
+              onClick={() => navigate("/getAllArtists")}
+              className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+            >
+              Explore Artists
+            </button>
+            <button
+              onClick={() => navigate("/gig-posts")}
+              className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+            >
+              Explore Gigs
+            </button>
+            <button
+              onClick={() => navigate("/create-gig")}
+              className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+            >
+              Create Gig
+            </button>
+            {user && (
+              <button
+                onClick={() => navigate("/my-bids")}
+                className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+              >
+                View My Bids
+              </button>
+            )}
+            <a
+              href="#howitworks"
+              className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+            >
+              How It Works
+            </a>
+            <a
+              href="#contact"
+              className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+            >
+              Contact
+            </a>
+            {!user ? (
+              <button
+                onClick={() => navigate("/login")}
+                className="block w-full text-left px-5 py-2 text-yellow-400 hover:bg-gray-700 transition"
+              >
+                Get Started
+              </button>
+            ) : (
+              <>
+                {artistId && (
+                  <button
+                    onClick={() => navigate(`/artist/${artistId}`)}
+                    className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+                  >
+                    View Profile
+                  </button>
+                )}
+                <button
+                  onClick={() => navigate("/conversations")}
+                  className="flex justify-between items-center w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+                >
+                  <span>Messages</span>
+                  <span className="bg-yellow-400 text-black text-xs font-bold px-2 py-0.5 rounded-full">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-5 py-2 text-red-400 hover:bg-gray-700 transition"
+                >
+                  Logout
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </nav>
 
       {/* Hero Section */}
@@ -231,32 +330,6 @@ const LandingPage = () => {
           </p>
 
           <div className="flex flex-wrap gap-4">
-            <button
-              onClick={() => navigate("/getAllArtists")}
-              className="bg-yellow-400 text-black px-6 py-3 rounded-full font-bold hover:bg-yellow-300 transition-all"
-            >
-              Explore Artists
-            </button>
-            <button
-              onClick={() => navigate("/gig-posts")}
-              className="border border-yellow-400 px-6 py-3 rounded-full font-bold hover:bg-yellow-400 hover:text-black transition-all"
-            >
-              Explore Gigs
-            </button>
-            <button
-              onClick={() => navigate("/create-gig")}
-              className="border border-yellow-400 px-6 py-3 rounded-full font-bold hover:bg-yellow-400 hover:text-black transition-all"
-            >
-              Create Gig
-            </button>
-            {user && (
-              <button
-                onClick={() => navigate("/my-bids")}
-                className="border border-yellow-400 px-6 py-3 rounded-full font-bold hover:bg-yellow-400 hover:text-black transition-all"
-              >
-                View My Bids
-              </button>
-            )}
             {user && !hasProfile && (
               <button
                 onClick={() => navigate("/createArtist")}

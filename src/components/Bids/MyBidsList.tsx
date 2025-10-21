@@ -88,7 +88,6 @@ const MyBidsList: React.FC = () => {
 
   const pendingCount = receivedBids.filter((b) => b.status === "pending").length;
 
-  // Navigation handler that prevents viewing rejected bids
   const handleViewBid = (bidId: string, status: string) => {
     if (status === "rejected") {
       alert("This bid has been rejected and can no longer be viewed.");
