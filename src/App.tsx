@@ -24,6 +24,10 @@ import { useDispatch} from "react-redux";
 import { useEffect } from "react";
 import { fetchCurrentUser } from "../redux/reducers/authReducer/authSlice";
 import type { AppDispatch} from "../redux/store";
+import CreateEvent from "./components/Event/CreateEvent";
+import EventList from "./components/Event/EventList";
+import EventDetails from "./components/Event/EventDetails";
+import UpdateEvent from "./components/Event/UpdateEvent";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAP_SECRET_KEY;
 
@@ -94,6 +98,10 @@ const App = () => {
       />
       <Route path="/bid/:bidId" element={<SingleBid />} />
       <Route path="/my-bids" element={<MyBidsList />} />
+      <Route path="/create-event" element={<CreateEvent />} />
+        <Route path="/events/:id" element={<EventDetails />} />
+      <Route path="/events/update/:id" element={<UpdateEvent />} />
+      <Route path="/events" element={<EventList />} />
     </Routes>
   );
 };

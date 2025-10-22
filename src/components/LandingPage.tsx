@@ -128,6 +128,18 @@ const LandingPage = () => {
               >
                 Create Gig
               </button>
+              <button
+                onClick={() => navigate("/create-event")}
+                className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+              >
+                Create Event
+              </button>
+              <button
+                onClick={() => navigate("/events")}
+                className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+              >
+                View Events
+              </button>
               {user && (
                 <button
                   onClick={() => navigate("/my-bids")}

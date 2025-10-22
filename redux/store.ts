@@ -6,6 +6,7 @@
     import posterSlice from "./reducers/posterReducer/posterSlice";
     import bidSlice from "./reducers/bidReducer/bidSlice";
     import notificationSlice from "./reducers/notificationReducer/notificationSlice"
+    import eventSlice from "./reducers/EventReducer/eventSlice";
 
     export const store = configureStore({
       reducer: {
@@ -15,10 +16,11 @@
         poster: posterSlice,
         bid: bidSlice, 
         notification: notificationSlice,
+        event: eventSlice,
       },
         middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // prevent some redux warnings
+      serializableCheck: false, 
     }),
     
     });
