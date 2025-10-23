@@ -1,6 +1,5 @@
 import { Route, Routes } from "react-router-dom";
 import { LoadScript } from "@react-google-maps/api";
-
 import LandingPage from "./components/LandingPage";
 import Register from "./components/Auth/Register";
 import Login from "./components/Auth/Login";

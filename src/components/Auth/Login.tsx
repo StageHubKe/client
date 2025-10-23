@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import type { AppDispatch, RootState } from "../../../redux/store";
-import { clearError, loginUser } from "../../../redux/reducers/authReducer/authSlice";
+import { clearError, googleLogin, loginUser } from "../../../redux/reducers/authReducer/authSlice";
+import { GoogleLogin } from "@react-oauth/google";
 
 const Login = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -94,6 +95,16 @@ const Login = () => {
             Register here
           </Link>
         </p>
+          <h2 className="text-white text-xl font-semibold mb-2">Sign in with Google</h2>
+
+      <GoogleLogin
+        onSuccess={(response) => {
+          if (response.credential) {
+            dispatch(googleLogin({ credential: response.credential }));
+          }
+        }}
+        onError={() => console.log("Google Login Failed")}
+      />
       </div>
     </div>
   );

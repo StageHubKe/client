@@ -2,11 +2,14 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios, { AxiosError } from "axios";
 
 export interface User {
-  [x: string]: string;
-  id: string;
+   _id: string;     
+  id?: string;  
   name: string;
   email: string;
+  picture?: string;
+  authProvider?: string;
 }
+
 
 interface AuthState {
   user: User | null;
@@ -52,7 +55,9 @@ export const registerUser = createAsyncThunk<
     return data;
   } catch (error) {
     const err = error as AxiosError<{ message: string }>;
-    return rejectWithValue(err.response?.data?.message || "Registration failed");
+    return rejectWithValue(
+      err.response?.data?.message || "Registration failed"
+    );
   }
 });
 
@@ -88,7 +93,9 @@ export const fetchCurrentUser = createAsyncThunk<
     return data.user;
   } catch (error) {
     const err = error as AxiosError<{ message: string }>;
-    return rejectWithValue(err.response?.data?.message || "Failed to fetch user");
+    return rejectWithValue(
+      err.response?.data?.message || "Failed to fetch user"
+    );
   }
 });
 
@@ -147,6 +154,27 @@ export const resetPassword = createAsyncThunk<
     const err = error as AxiosError<{ message: string }>;
     return rejectWithValue(
       err.response?.data?.message || "Failed to reset password"
+    );
+  }
+});
+
+// ✅ Google Login
+export const googleLogin = createAsyncThunk<
+  { user: User; message: string },
+  { credential: string },
+  { rejectValue: string }
+>("auth/googleLogin", async ({ credential }, { rejectWithValue }) => {
+  try {
+    const { data } = await axios.post<{ user: User; message: string }>(
+      `${API_URL}/google`,
+      { credential },
+      { withCredentials: true }
+    );
+    return data;
+  } catch (error) {
+    const err = error as AxiosError<{ message: string }>;
+    return rejectWithValue(
+      err.response?.data?.message || "Google login failed"
     );
   }
 });
@@ -248,6 +276,19 @@ const authSlice = createSlice({
       .addCase(resetPassword.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to reset password";
+      })
+      .addCase(googleLogin.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(googleLogin.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+        state.user = action.payload.user;
+        state.message = action.payload.message;
+      })
+      .addCase(googleLogin.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Google login failed";
       });
   },
 });

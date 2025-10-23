@@ -81,8 +81,8 @@ const LandingPage = () => {
   const handleLogout = () => {
     dispatch(logoutUser());
     socket.disconnect();
-    setMenuOpen(false); 
-    navigate("/login"); 
+    setMenuOpen(false);
+    navigate("/login");
   };
 
   const hasProfile =
@@ -105,7 +105,7 @@ const LandingPage = () => {
       {/* Navbar */}
       <nav className="fixed top-0 left-0 right-0 flex justify-between items-center p-5 md:px-16 bg-black/40 backdrop-blur-md z-50">
         <h1
-          className="text-3xl font-extrabold text-yellow-400 cursor-pointer"
+          className="text-3xl font-extrabold text-yellow-400 cursor-pointer tracking-wide"
           onClick={() => navigate("/")}
         >
           StageHub<span className="text-white">.</span>
@@ -122,40 +122,39 @@ const LandingPage = () => {
                 onClick={() => navigate("/getAllArtists")}
                 className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
               >
-                Explore Artists
+                Artists
               </button>
               <button
                 onClick={() => navigate("/gig-posts")}
                 className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
               >
-                Explore Gigs
-              </button>
-              <button
-                onClick={() => navigate("/create-gig")}
-                className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
-              >
-                Create Gig
-              </button>
-              <button
-                onClick={() => navigate("/create-event")}
-                className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
-              >
-                Create Event
+                Gigs
               </button>
               <button
                 onClick={() => navigate("/events")}
                 className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
               >
-                View Events
+                Events
               </button>
-              {user && (
-                <button
-                  onClick={() => navigate("/my-bids")}
-                  className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
-                >
-                  View My Bids
-                </button>
-              )}
+            </div>
+          </div>
+          <div className="relative group">
+            <button className="hover:text-yellow-400 transition-all">
+              Create
+            </button>
+            <div className="absolute left-0 mt-2 w-48 bg-gray-800 rounded-xl shadow-xl py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+              <button
+                onClick={() => navigate("/create-gig")}
+                className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+              >
+                Gig
+              </button>
+              <button
+                onClick={() => navigate("/create-event")}
+                className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+              >
+                Event
+              </button>
             </div>
           </div>
           <a href="#howitworks" className="hover:text-yellow-400 transition-all">
@@ -167,12 +166,12 @@ const LandingPage = () => {
           {user && (
             <button
               onClick={() => navigate("/conversations")}
-              className="flex items-center gap-2 hover:text-yellow-400 transition"
+              className="flex items-center gap-2 hover:text-yellow-400 transition relative"
             >
               <MessageCircle size={20} />
               <span>Messages</span>
               {unreadCount > 0 && (
-                <span className="bg-yellow-400 text-black text-xs font-bold px-2 py-0.5 rounded-full">
+                <span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-yellow-400 text-black text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] flex items-center justify-center">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
@@ -192,7 +191,7 @@ const LandingPage = () => {
         </div>
 
         {/* Auth Section */}
-        <div className="hidden md:flex items-center">
+        <div className="hidden md:flex items-center gap-4">
           {!user ? (
             <button
               onClick={() => navigate("/login")}
@@ -208,7 +207,22 @@ const LandingPage = () => {
                 aria-label="Toggle user menu"
                 aria-expanded={menuOpen}
               >
-                <span>{user.name}</span>
+                {user?.authProvider === "google" && user?.picture && (
+                  <img
+                    src={user.picture}
+                    alt={`${user.name}'s profile`}
+                    className="w-6 h-6 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                )}
+                {(!user?.picture || user?.authProvider !== "google") && (
+                  <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-black font-bold text-sm">
+                    {user?.name?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="truncate max-w-20">{user.name}</span>
                 <svg
                   className={`w-4 h-4 transform transition-transform ${
                     menuOpen ? "rotate-180" : "rotate-0"
@@ -227,7 +241,12 @@ const LandingPage = () => {
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 mt-3 w-56 bg-gray-800 rounded-xl shadow-xl py-2 z-50 animate-fadeIn">
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute right-0 mt-3 w-56 bg-gray-800 rounded-xl shadow-xl py-2 z-50"
+                >
                   {artistId && (
                     <button
                       onClick={() => {
@@ -254,7 +273,7 @@ const LandingPage = () => {
                   >
                     Logout
                   </button>
-                </div>
+                </motion.div>
               )}
             </div>
           )}
@@ -262,7 +281,11 @@ const LandingPage = () => {
 
         {/* Mobile Menu */}
         {menuOpen && (
-          <div className="md:hidden absolute top-16 left-0 right-0 bg-gray-800 rounded-b-xl shadow-xl py-4 z-50 animate-fadeIn">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="md:hidden absolute top-16 left-0 right-0 bg-gray-800 rounded-b-xl shadow-xl py-4 z-50"
+          >
             <button
               onClick={() => {
                 navigate("/getAllArtists");
@@ -270,7 +293,7 @@ const LandingPage = () => {
               }}
               className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
             >
-              Explore Artists
+              Artists
             </button>
             <button
               onClick={() => {
@@ -279,7 +302,16 @@ const LandingPage = () => {
               }}
               className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
             >
-              Explore Gigs
+              Gigs
+            </button>
+            <button
+              onClick={() => {
+                navigate("/events");
+                setMenuOpen(false);
+              }}
+              className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+            >
+              Events
             </button>
             <button
               onClick={() => {
@@ -290,6 +322,15 @@ const LandingPage = () => {
             >
               Create Gig
             </button>
+            <button
+              onClick={() => {
+                navigate("/create-event");
+                setMenuOpen(false);
+              }}
+              className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+            >
+              Create Event
+            </button>
             {user && (
               <button
                 onClick={() => {
@@ -298,7 +339,7 @@ const LandingPage = () => {
                 }}
                 className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
               >
-                View My Bids
+                My Bids
               </button>
             )}
             <a
@@ -343,7 +384,7 @@ const LandingPage = () => {
                     navigate("/conversations");
                     setMenuOpen(false);
                   }}
-                  className="flex justify-between items-center w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+                  className="flex items-center justify-between w-full text-left px-5 py-2 hover:bg-gray-700 transition"
                 >
                   <span>Messages</span>
                   {unreadCount > 0 && (
@@ -360,7 +401,7 @@ const LandingPage = () => {
                 </button>
               </>
             )}
-          </div>
+          </motion.div>
         )}
       </nav>
 
@@ -373,16 +414,21 @@ const LandingPage = () => {
           className="md:w-1/2"
         >
           <h2 className="text-5xl md:text-6xl font-extrabold leading-tight mb-6">
-            Discover & Book <span className="text-yellow-400">Top Artists</span>{" "}
-            for Your Next Event
+            Discover & Book <span className="text-yellow-400">Top Talent</span>{" "}
+            for Your Events
           </h2>
           <p className="text-gray-300 text-lg mb-10 leading-relaxed">
-            Whether you're looking for <strong>performers</strong>,{" "}
-            <strong>DJs</strong>, or <strong>event planners</strong>, StageHub
-            helps you connect with the right talent effortlessly.
+            Connect with <strong>performers</strong>, <strong>DJs</strong>, <strong>bands</strong>,
+            <strong> MCs</strong>, and more. StageHub makes finding and booking talent seamless.
           </p>
 
           <div className="flex flex-wrap gap-4">
+            <button
+              onClick={() => navigate("/getAllArtists")}
+              className="bg-yellow-400 text-black px-6 py-3 rounded-full font-bold hover:bg-yellow-300 transition-all"
+            >
+              Explore Artists
+            </button>
             {user && !hasProfile && (
               <button
                 onClick={() => navigate("/createArtist")}
