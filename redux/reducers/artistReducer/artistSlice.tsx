@@ -71,6 +71,7 @@ export interface NewArtistProfileInput {
 interface ArtistProfileState {
   profile: ArtistProfile | null;
   allProfiles: ArtistProfile[];
+   searchTerm: string;
   loading: boolean;
   success: boolean;
   error: string | null;
@@ -79,6 +80,7 @@ interface ArtistProfileState {
 const initialState: ArtistProfileState = {
   profile: null,
   allProfiles: [],
+  searchTerm: "",
   loading: false,
   success: false,
   error: null,
@@ -175,6 +177,26 @@ export const deleteArtistProfile = createAsyncThunk<
   }
 });
 
+export const getArtistProfileByUserId = createAsyncThunk<
+  ArtistProfile,
+  string,
+  { rejectValue: string }
+>("artistProfile/getByUserId", async (userId, { rejectWithValue }) => {
+  try {
+    const { data } = await axios.get(
+      `${API_URL}/getArtistProfileByUserId/${userId}`
+    );
+    return data.profile as ArtistProfile;
+  } catch (error) {
+    const err = error as AxiosError<{ message: string }>;
+    return rejectWithValue(
+      err.response?.data?.message ||
+        "Error fetching artist profile by user ID"
+    );
+  }
+});
+
+
 // ✅ Slice
 const artistProfileSlice = createSlice({
   name: "artistProfile",
@@ -184,6 +206,9 @@ const artistProfileSlice = createSlice({
       state.profile = null;
       state.error = null;
       state.success = false;
+    },
+     setSearchTerm: (state, action: PayloadAction<string>) => {
+      state.searchTerm = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -235,9 +260,13 @@ const artistProfileSlice = createSlice({
       .addCase(deleteArtistProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to delete profile";
-      });
+      })
+      .addCase(getArtistProfileByUserId.fulfilled, (state, action) => {
+  state.profile = action.payload;
+})
+
   },
 });
 
-export const { clearProfile } = artistProfileSlice.actions;
+export const { clearProfile, setSearchTerm } = artistProfileSlice.actions;
 export default artistProfileSlice.reducer;

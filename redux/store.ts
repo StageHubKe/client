@@ -3,16 +3,24 @@
     import authSlice from "./reducers/authReducer/authSlice";
     import artistSlice from "./reducers/artistReducer/artistSlice";
     import messageSlice from "./reducers/messageReducer/messageSlice";
+    import posterSlice from "./reducers/posterReducer/posterSlice";
+    import bidSlice from "./reducers/bidReducer/bidSlice";
+    import notificationSlice from "./reducers/notificationReducer/notificationSlice"
+    import eventSlice from "./reducers/EventReducer/eventSlice";
 
     export const store = configureStore({
       reducer: {
         auth: authSlice,
         artist: artistSlice,
         messages: messageSlice,
+        poster: posterSlice,
+        bid: bidSlice, 
+        notification: notificationSlice,
+        event: eventSlice,
       },
         middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // prevent some redux warnings
+      serializableCheck: false, 
     }),
     
     });

@@ -8,6 +8,7 @@ import {
   updateArtistProfile,
   type ArtistProfile,
 } from "../../../redux/reducers/artistReducer/artistSlice";
+import { fetchCurrentUser } from "../../../redux/reducers/authReducer/authSlice";
 
 const CLOUDINARY_UPLOAD_PRESET = "stagehub";
 const CLOUDINARY_CLOUD_NAME = "ddzndlcxn";
@@ -24,7 +25,9 @@ const UpdateArtist: React.FC = () => {
   const { id } = useParams<{ id: string }>();
 
   const { profile, loading } = useSelector((state: RootState) => state.artist);
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, loading: authLoading } = useSelector(
+    (state: RootState) => state.auth
+  );
 
   const [formData, setFormData] = useState({
     stageName: "",
@@ -49,10 +52,15 @@ const UpdateArtist: React.FC = () => {
   const [coverUploading, setCoverUploading] = useState(false);
 
   const locationInputRef = useRef<HTMLInputElement | null>(null);
-  // const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  // Fetch artist profile
+
   useEffect(() => {
-    if (!user) navigate("/login");
+    if (!user && !authLoading) {
+      // Fetch user if not loaded
+      dispatch(fetchCurrentUser());
+    }
+  }, [dispatch, user, authLoading]);
+
+  useEffect(() => {
     if (id) dispatch(getArtistProfileById(id));
   }, [id, user, dispatch, navigate]);
 
@@ -255,6 +263,20 @@ const UpdateArtist: React.FC = () => {
       });
   };
 
+  if (authLoading) {
+    return (
+      <p className="text-center mt-10 text-blue-500">Loading user info...</p>
+    );
+  }
+
+  if (!user) {
+    return (
+      <p className="text-center mt-10 text-red-500">
+        Please log in to view your bids.
+      </p>
+    );
+  }
+
   if (loading)
     return (
       <p className="text-center text-yellow-400 mt-10">Loading profile...</p>
@@ -262,6 +284,13 @@ const UpdateArtist: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 text-white py-10 px-6">
+      <button
+        onClick={() => navigate(`/artist/${id}`)}
+        className="mb-6 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all"
+      >
+        ← Back to Artist Page
+      </button>
+
       <div className="max-w-3xl mx-auto bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-8">
         <h1 className="text-3xl font-bold text-purple-300 mb-6 text-center">
           Update Artist Profile 🎨
