@@ -35,6 +35,12 @@ const LandingPage = () => {
   }, [dispatch, user]);
 
   useEffect(() => {
+    if (!user) {
+      setMenuOpen(false);
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
     if (!user) return;
 
     const handleUnreadCountUpdated = ({ count }: { count: number }) => {
@@ -74,7 +80,9 @@ const LandingPage = () => {
 
   const handleLogout = () => {
     dispatch(logoutUser());
-    navigate("/login");
+    socket.disconnect();
+    setMenuOpen(false); 
+    navigate("/login"); 
   };
 
   const hasProfile =
@@ -197,6 +205,8 @@ const LandingPage = () => {
               <button
                 onClick={() => setMenuOpen((prev) => !prev)}
                 className="flex items-center gap-2 border border-yellow-400 px-4 py-2 rounded-full hover:bg-yellow-400 hover:text-black transition font-semibold"
+                aria-label="Toggle user menu"
+                aria-expanded={menuOpen}
               >
                 <span>{user.name}</span>
                 <svg
@@ -220,14 +230,20 @@ const LandingPage = () => {
                 <div className="absolute right-0 mt-3 w-56 bg-gray-800 rounded-xl shadow-xl py-2 z-50 animate-fadeIn">
                   {artistId && (
                     <button
-                      onClick={() => navigate(`/artist/${artistId}`)}
+                      onClick={() => {
+                        navigate(`/artist/${artistId}`);
+                        setMenuOpen(false);
+                      }}
                       className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
                     >
                       View Profile
                     </button>
                   )}
                   <button
-                    onClick={() => navigate("/my-bids")}
+                    onClick={() => {
+                      navigate("/my-bids");
+                      setMenuOpen(false);
+                    }}
                     className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
                   >
                     My Bids
@@ -248,26 +264,38 @@ const LandingPage = () => {
         {menuOpen && (
           <div className="md:hidden absolute top-16 left-0 right-0 bg-gray-800 rounded-b-xl shadow-xl py-4 z-50 animate-fadeIn">
             <button
-              onClick={() => navigate("/getAllArtists")}
+              onClick={() => {
+                navigate("/getAllArtists");
+                setMenuOpen(false);
+              }}
               className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
             >
               Explore Artists
             </button>
             <button
-              onClick={() => navigate("/gig-posts")}
+              onClick={() => {
+                navigate("/gig-posts");
+                setMenuOpen(false);
+              }}
               className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
             >
               Explore Gigs
             </button>
             <button
-              onClick={() => navigate("/create-gig")}
+              onClick={() => {
+                navigate("/create-gig");
+                setMenuOpen(false);
+              }}
               className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
             >
               Create Gig
             </button>
             {user && (
               <button
-                onClick={() => navigate("/my-bids")}
+                onClick={() => {
+                  navigate("/my-bids");
+                  setMenuOpen(false);
+                }}
                 className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
               >
                 View My Bids
@@ -276,18 +304,23 @@ const LandingPage = () => {
             <a
               href="#howitworks"
               className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+              onClick={() => setMenuOpen(false)}
             >
               How It Works
             </a>
             <a
               href="#contact"
               className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
+              onClick={() => setMenuOpen(false)}
             >
               Contact
             </a>
             {!user ? (
               <button
-                onClick={() => navigate("/login")}
+                onClick={() => {
+                  navigate("/login");
+                  setMenuOpen(false);
+                }}
                 className="block w-full text-left px-5 py-2 text-yellow-400 hover:bg-gray-700 transition"
               >
                 Get Started
@@ -296,20 +329,28 @@ const LandingPage = () => {
               <>
                 {artistId && (
                   <button
-                    onClick={() => navigate(`/artist/${artistId}`)}
+                    onClick={() => {
+                      navigate(`/artist/${artistId}`);
+                      setMenuOpen(false);
+                    }}
                     className="block w-full text-left px-5 py-2 hover:bg-gray-700 transition"
                   >
                     View Profile
                   </button>
                 )}
                 <button
-                  onClick={() => navigate("/conversations")}
+                  onClick={() => {
+                    navigate("/conversations");
+                    setMenuOpen(false);
+                  }}
                   className="flex justify-between items-center w-full text-left px-5 py-2 hover:bg-gray-700 transition"
                 >
                   <span>Messages</span>
-                  <span className="bg-yellow-400 text-black text-xs font-bold px-2 py-0.5 rounded-full">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
+                  {unreadCount > 0 && (
+                    <span className="bg-yellow-400 text-black text-xs font-bold px-2 py-0.5 rounded-full">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
                 </button>
                 <button
                   onClick={handleLogout}

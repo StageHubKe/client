@@ -18,16 +18,18 @@ import GigPosterList from "./components/Poster/GigPosterList";
 import GigPosterDetails from "./components/Poster/GigPosterDetails";
 import EditGigPoster from "./components/Poster/EditGigPoster";
 import SingleBid from "./components/Bids/SingleBid";
-// import MyBids from "./components/Bids/MyBids";
 import MyBidsList from "./components/Bids/MyBidsList";
-import { useDispatch} from "react-redux";
+import { useDispatch } from "react-redux";
 import { useEffect } from "react";
 import { fetchCurrentUser } from "../redux/reducers/authReducer/authSlice";
-import type { AppDispatch} from "../redux/store";
+import type { AppDispatch } from "../redux/store";
 import CreateEvent from "./components/Event/CreateEvent";
 import EventList from "./components/Event/EventList";
 import EventDetails from "./components/Event/EventDetails";
 import UpdateEvent from "./components/Event/UpdateEvent";
+import VerifyEmail from "./components/Auth/VerifyEmail";
+import ResetPassword from "./components/Auth/ResetPassword";
+import ForgotPassword  from "./components/Auth/ForgotPassword";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAP_SECRET_KEY;
 
@@ -99,9 +101,12 @@ const App = () => {
       <Route path="/bid/:bidId" element={<SingleBid />} />
       <Route path="/my-bids" element={<MyBidsList />} />
       <Route path="/create-event" element={<CreateEvent />} />
-        <Route path="/events/:id" element={<EventDetails />} />
+      <Route path="/events/:id" element={<EventDetails />} />
       <Route path="/events/update/:id" element={<UpdateEvent />} />
       <Route path="/events" element={<EventList />} />
+      <Route path="/verify/:token" element={<VerifyEmail />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
     </Routes>
   );
 };

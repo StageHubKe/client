@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -16,8 +16,10 @@ const EventDetails: React.FC = () => {
   const { singleEvent, loading, error } = useSelector(
     (state: RootState) => state.event
   );
-  const { user } = useSelector((state: RootState) => state.auth); // current logged-in user
+  const { user } = useSelector((state: RootState) => state.auth);
+
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (id) dispatch(getEventById(id));
@@ -35,7 +37,26 @@ const EventDetails: React.FC = () => {
 
   const handleUpdate = () => {
     navigate(`/events/update/${id}`);
+    setMenuOpen(false);
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuOpen]);
 
   if (loading)
     return (
@@ -50,7 +71,6 @@ const EventDetails: React.FC = () => {
   if (!singleEvent)
     return <p className="text-center text-gray-600 mt-10">Event not found.</p>;
 
-  // check if current user is the creator
   const isCreator = user?._id === singleEvent.createdBy?._id;
 
   return (
@@ -64,11 +84,13 @@ const EventDetails: React.FC = () => {
           <ArrowLeft className="mr-2" size={20} /> Back to Events
         </button>
 
-        {/* Hamburger for mobile */}
+        {/* Hamburger for all screen sizes */}
         {isCreator && (
           <button
             onClick={() => setMenuOpen((prev) => !prev)}
-            className="text-gray-700 p-2 rounded-lg bg-gray-100 hover:bg-gray-200 focus:outline-none md:hidden"
+            className="text-gray-700 p-2 rounded-lg bg-gray-100 hover:bg-gray-200 focus:outline-none"
+            aria-label="Toggle action menu"
+            aria-expanded={menuOpen}
           >
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -93,7 +115,8 @@ const EventDetails: React.FC = () => {
 
         <div className="mt-6 space-y-2 text-sm text-gray-800">
           <p>
-            📍 <span className="font-medium">Location:</span> {singleEvent.location}
+            📍 <span className="font-medium">Location:</span>{" "}
+            {singleEvent.location}
           </p>
           <p>
             📅 <span className="font-medium">Date:</span>{" "}
@@ -105,44 +128,33 @@ const EventDetails: React.FC = () => {
           </p>
         </div>
 
-        {/* Desktop Buttons */}
-        {isCreator && (
-          <div className="hidden md:flex justify-end mt-8 space-x-3">
-            <button
-              onClick={handleUpdate}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
-            >
-              ✏️ Update Event
-            </button>
-            <button
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition"
-            >
-              🗑️ Delete Event
-            </button>
-          </div>
-        )}
-
-        {/* Mobile Menu Dropdown */}
+        {/* Hamburger Menu Dropdown */}
         {isCreator && menuOpen && (
-          <div className="absolute top-16 right-4 bg-white shadow-xl rounded-lg p-4 flex flex-col space-y-3 md:hidden z-50 animate-fadeIn">
+          <div
+            ref={menuRef}
+            className="absolute top-16 right-4 bg-white shadow-xl rounded-lg p-4 flex flex-col space-y-3 z-50 animate-fadeIn"
+            role="menu"
+            aria-label="Event actions"
+          >
             <button
               onClick={() => {
                 handleUpdate();
                 setMenuOpen(false);
               }}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+              className="text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+              role="menuitem"
             >
-              ✏️ Update Event
+              ✏️ 
             </button>
             <button
               onClick={() => {
                 handleDelete();
                 setMenuOpen(false);
               }}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+              className="text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+              role="menuitem"
             >
-              🗑️ Delete Event
+              🗑️ 
             </button>
           </div>
         )}

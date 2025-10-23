@@ -22,10 +22,10 @@ const EventList: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto mt-10 p-4">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-blue-600">Upcoming Events 🎉</h2>
+        <h2 className="text-3xl font-bold text-blue-600">Upcoming Events</h2>
         <button
           onClick={() => navigate("/")}
-          className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg transition"
+          className="hover:bg-gray-200 text-black px-4 py-2 rounded-lg transition"
         >
           ⬅️ Back to Home
         </button>
