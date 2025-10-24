@@ -51,10 +51,10 @@ const CreateArtist: React.FC = () => {
     if (window.google && inputRef.current) {
       autocompleteRef.current = new google.maps.places.Autocomplete(
         inputRef.current,
-         {
-        types: ["(cities)"],
-        componentRestrictions: { country: "KE" },
-      }
+        {
+          types: ["(cities)"],
+          componentRestrictions: { country: "KE" },
+        }
       );
 
       autocompleteRef.current.addListener("place_changed", () => {
@@ -211,76 +211,123 @@ const CreateArtist: React.FC = () => {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Cover Image */}
-          <div className="flex flex-col items-center gap-2">
+
+          <div className="flex flex-col items-center gap-3 w-full mb-10">
+            <h3 className="text-xl font-semibold text-white text-center">
+              🎨 Upload a Cover Image
+            </h3>
+            <p className="text-sm text-gray-300 text-center max-w-md">
+              This will be the main image displayed for your content. Choose a
+              high-quality, engaging image that best represents you, your band or your
+              team.
+            </p>
+
             {coverImage ? (
               <img
                 src={coverImage}
                 alt="Cover"
-                className="w-full h-48 object-cover rounded-xl border-2 border-purple-400 shadow-md"
+                className="w-full h-56 object-cover rounded-xl border-2 border-purple-400 shadow-lg hover:scale-[1.02] transition-transform"
               />
             ) : (
-              <div className="w-full h-48 bg-white/20 flex items-center justify-center text-gray-300 rounded-xl">
-                No Cover Image Uploaded
+              <div className="w-full h-56 bg-white/10 border-2 border-dashed border-purple-400 rounded-xl flex items-center justify-center text-gray-400 text-sm">
+                No Cover Image Uploaded Yet
               </div>
             )}
+
+            <label
+              htmlFor="cover-upload"
+              className="mt-3 bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-lg cursor-pointer transition"
+            >
+              Upload Cover Image
+            </label>
             <input
+              id="cover-upload"
               type="file"
               accept="image/*"
               onChange={handleCoverUpload}
-              className="text-sm text-gray-200 cursor-pointer"
+              className="hidden"
             />
           </div>
 
-          {/* Videos */}
-          <div className="flex flex-col items-center gap-4">
+          {/* Videos Upload Section */}
+          <div className="flex flex-col items-center gap-5 w-full">
+            <h3 className="text-xl font-semibold text-white text-center">
+              🎥 Add Videos
+            </h3>
+            <p className="text-sm text-gray-300 text-center max-w-md">
+              You can upload up to{" "}
+              <span className="font-semibold text-purple-300">5 videos that introduces you or showcases your work</span>.
+              Each video can include a title and short description to explain
+              its content.
+            </p>
+
             {videos.map((video, index) => (
-              <div key={index} className="w-full space-y-2">
+              <div
+                key={index}
+                className="w-full bg-white/10 p-4 rounded-xl border border-purple-400 shadow-md space-y-3"
+              >
                 <video
                   src={video.url}
                   controls
-                  className="w-full h-40 rounded-xl border-2 border-purple-400 shadow-md"
+                  className="w-full h-48 rounded-lg border-2 border-purple-400 shadow-sm"
                 />
-                <input
-                  type="text"
-                  placeholder="Video Title"
-                  value={video.title}
-                  onChange={(e) =>
-                    handleVideoDetailChange(index, "title", e.target.value)
-                  }
-                  className="w-full p-3 rounded-lg bg-white/20 placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
-                />
-                <textarea
-                  placeholder="Video Description"
-                  value={video.description}
-                  onChange={(e) =>
-                    handleVideoDetailChange(
-                      index,
-                      "description",
-                      e.target.value
-                    )
-                  }
-                  rows={2}
-                  className="w-full p-3 rounded-lg bg-white/20 placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
-                />
+
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Video Title (e.g., Introduction or Walkthrough)"
+                    value={video.title}
+                    onChange={(e) =>
+                      handleVideoDetailChange(index, "title", e.target.value)
+                    }
+                    className="w-full p-3 rounded-lg bg-white/20 text-white placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
+                  />
+                  <textarea
+                    placeholder="Add a brief description about this video..."
+                    value={video.description}
+                    onChange={(e) =>
+                      handleVideoDetailChange(
+                        index,
+                        "description",
+                        e.target.value
+                      )
+                    }
+                    rows={2}
+                    className="w-full p-3 rounded-lg bg-white/20 text-white placeholder-gray-300 outline-none focus:ring-2 focus:ring-purple-400"
+                  />
+                </div>
+
                 <button
                   type="button"
                   onClick={() => removeVideo(index)}
-                  className="text-red-400 hover:text-red-600"
+                  className="text-red-400 hover:text-red-600 text-sm font-medium"
                 >
-                  Remove Video
+                  ✖ Remove Video
                 </button>
               </div>
             ))}
+
             {videos.length < 5 && (
-              <input
-                type="file"
-                accept="video/*"
-                onChange={handleVideoUpload}
-                className="text-sm text-gray-200 cursor-pointer"
-              />
+              <div className="flex flex-col items-center gap-2">
+                <label
+                  htmlFor="video-upload"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-lg cursor-pointer transition"
+                >
+                  Upload New Video
+                </label>
+                <input
+                  id="video-upload"
+                  type="file"
+                  accept="video/*"
+                  onChange={handleVideoUpload}
+                  className="hidden"
+                />
+              </div>
             )}
-            {uploading && <p className="text-yellow-300">Uploading...</p>}
+
+            {uploading && (
+              <p className="text-yellow-300 mt-2 animate-pulse">Uploading...</p>
+            )}
           </div>
 
           {/* Artist Info */}
