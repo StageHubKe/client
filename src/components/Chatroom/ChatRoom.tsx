@@ -1,8 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, MoreVertical, Send } from "lucide-react";
+import { ArrowLeft, Check, MoreVertical, Send, Smile } from "lucide-react";
 import { toast } from "react-toastify";
+import EmojiPicker, {
+  type EmojiClickData,
+  Theme,
+  EmojiStyle,
+} from "emoji-picker-react";
 
 import {
   socket,
@@ -37,16 +42,17 @@ const ChatRoom: React.FC = () => {
   const [text, setText] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [participantOnline, setParticipantOnline] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
-  const { messages, loading, error, participantNames } = useSelector(
-    (state: RootState) => state.messages
-  );
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   const user = useSelector(
     (state: RootState) => state.auth.user
   ) as User | null;
-
+  const { messages, loading, error, participantNames } = useSelector(
+    (state: RootState) => state.messages
+  );
   const { loading: authLoading } = useSelector(
     (state: RootState) => state.auth
   );
@@ -57,93 +63,44 @@ const ChatRoom: React.FC = () => {
     ? participantNames[conversationId] || "Chat"
     : "Chat";
 
-  /** Scroll to bottom */
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
   useEffect(() => {
-    if (!user) {
-      dispatch(fetchCurrentUser());
-    }
-  }, [dispatch, navigate, user]);
+    if (!user) dispatch(fetchCurrentUser());
+  }, [dispatch, user]);
 
+  useEffect(() => {
+    if (!user || !conversationId) return;
+
+    const loadConversation = async () => {
+      try {
+        if (!messages[conversationId]) {
+          await dispatch(fetchMessages(conversationId)).unwrap();
+        }
+        await dispatch(fetchConversationById(conversationId)).unwrap();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        console.error("Failed to load conversation:", err);
+        toast.error("Failed to load conversation");
+        navigate("/conversations");
+      }
+    };
+
+    loadConversation();
+  }, [dispatch, user, conversationId, messages, navigate]);
   useEffect(() => {
     scrollToBottom();
   }, [currentMessages, scrollToBottom]);
 
-  /** Toast on errors */
   useEffect(() => {
     if (error) toast.error(error);
   }, [error]);
 
-  /** Handle message deletion */
-  const handleDeleteMessage = async (messageId: string) => {
-    if (!conversationId) return;
-    if (!window.confirm("Delete this message?")) return;
-
-    try {
-      await dispatch(deleteMessage({ messageId, conversationId })).unwrap();
-      toast.success("Message deleted");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete message");
-    }
-  };
-
-  /** Handle edit */
-  const handleEditMessage = (msg: Message) => {
-    setText(msg.text);
-    setEditingMessageId(msg._id ?? null);
-  };
-
-  /** Track online/offline */
   useEffect(() => {
     if (!conversationId || !user) return;
 
-    const handleUserStatus = ({
-      userId,
-      online,
-    }: {
-      userId: string;
-      online: boolean;
-    }) => {
-      if (userId !== user._id) setParticipantOnline(online);
-    };
-
-    const cleanupFunction = () => {
-      socket.off("user_status", handleUserStatus);
-    };
-
-    socket.on("user_status", handleUserStatus);
-
-    return cleanupFunction;
-  }, [conversationId, user]);
-
-  /** Verify conversation + fetch messages */
-  const verifyConversation = useCallback(async () => {
-    if (!user || !conversationId) {
-      toast.error("Please log in to view this chat");
-      return;
-    }
-    try {
-      await dispatch(fetchMessages(conversationId)).unwrap();
-      await dispatch(fetchConversationById(conversationId)).unwrap();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      console.error("Error loading conversation:", err);
-      toast.error("Failed to load conversation");
-      navigate("/conversations");
-    }
-  }, [user, conversationId, dispatch, navigate]);
-
-  useEffect(() => {
-    verifyConversation();
-  }, [verifyConversation]);
-
-  /** Mark messages as read */
-  const markMessagesAsRead = useCallback(() => {
-    if (!conversationId || !user) return;
     currentMessages.forEach((msg) => {
       if (
         msg._id &&
@@ -158,10 +115,20 @@ const ChatRoom: React.FC = () => {
   }, [currentMessages, conversationId, user, dispatch]);
 
   useEffect(() => {
-    markMessagesAsRead();
-  }, [markMessagesAsRead]);
+    if (!conversationId || !user) return;
 
-  /** Socket subscriptions */
+    const handleUserStatus = ({
+      userId,
+      online,
+    }: {
+      userId: string;
+      online: boolean;
+    }) => {
+      if (userId !== user._id) setParticipantOnline(online);
+    };
+
+    socket.on("user_status", handleUserStatus);
+  }, [conversationId, user]);
   useEffect(() => {
     if (!conversationId || !user) return;
 
@@ -210,7 +177,6 @@ const ChatRoom: React.FC = () => {
     };
   }, [dispatch, conversationId, user]);
 
-  /** Send / Update message */
   const handleSend = useCallback(async () => {
     if (!text.trim() || !user || !conversationId) {
       toast.warn("Message cannot be empty");
@@ -249,11 +215,7 @@ const ChatRoom: React.FC = () => {
 
     try {
       await dispatch(
-        sendMessage({
-          conversationId,
-          senderId: user._id,
-          text,
-        })
+        sendMessage({ conversationId, senderId: user._id, text })
       ).unwrap();
       setText("");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -262,6 +224,25 @@ const ChatRoom: React.FC = () => {
       toast.error(err.message || "Failed to send message");
     }
   }, [text, user, conversationId, editingMessageId, dispatch]);
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!conversationId) return;
+    if (!window.confirm("Delete this message?")) return;
+
+    try {
+      await dispatch(deleteMessage({ messageId, conversationId })).unwrap();
+      toast.success("Message deleted");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete message");
+    }
+  };
+
+  const handleEditMessage = (msg: Message) => {
+    setText(msg.text);
+    setEditingMessageId(msg._id ?? null);
+  };
+
   if (authLoading)
     return (
       <p className="text-center mt-10 text-blue-500">Loading user info...</p>
@@ -269,18 +250,18 @@ const ChatRoom: React.FC = () => {
   if (!user)
     return (
       <p className="text-center mt-10 text-red-500">
-        Please log in to view this bid.
+        Please log in to view this chat.
       </p>
     );
+
   return (
     <div className="flex flex-col h-screen sm:h-[90vh] md:h-[85vh] bg-gray-900 rounded-none sm:rounded-xl overflow-hidden shadow-lg w-full max-w-[100vw] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto sm:my-4">
-      {/* Header */}
       <div className="flex items-center justify-between bg-gray-800 p-3 sm:p-4 border-b border-gray-700">
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate("/conversations")}
-            className="text-yellow-400 hover:text-yellow-300 transition"
-            aria-label="Back to conversations"
+            className="text-white hover:text-gray-300 transition"
+            aria-label="Back"
           >
             <ArrowLeft size={20} />
           </button>
@@ -307,8 +288,7 @@ const ChatRoom: React.FC = () => {
         ) : (
           currentMessages.map((msg) => {
             const isSender =
-              typeof msg.sender !== "string" && msg.sender._id === user?._id;
-
+              typeof msg.sender !== "string" && msg.sender._id === user._id;
             return (
               <div
                 key={msg._id || `temp-${msg.createdAt}`}
@@ -317,13 +297,11 @@ const ChatRoom: React.FC = () => {
                 <div
                   className={`relative px-4 py-2 rounded-2xl max-w-[75%] sm:max-w-[60%] lg:max-w-[50%] shadow-md group ${
                     isSender
-                      ? "bg-gradient-to-br from-yellow-400 to-yellow-500 text-gray-900"
+                      ? "bg-white text-gray-900"
                       : "bg-gray-800 text-gray-100"
                   }`}
                 >
                   <p className="break-words leading-relaxed">{msg.text}</p>
-
-                  {/* Timestamp & Read status */}
                   <div className="flex items-center justify-end mt-1 space-x-1 text-xs text-gray-600">
                     <span
                       className={`${
@@ -335,7 +313,6 @@ const ChatRoom: React.FC = () => {
                         minute: "2-digit",
                       })}
                     </span>
-
                     {isSender && (
                       <span className="flex items-center ml-1">
                         <Check
@@ -353,11 +330,12 @@ const ChatRoom: React.FC = () => {
                       </span>
                     )}
                   </div>
+
                   {isSender && (
                     <div className="absolute top-1 right-1">
                       <button
                         onClick={() =>
-                          setMenuOpen((prev: string | null): string | null =>
+                          setMenuOpen((prev) =>
                             prev === msg._id ? null : msg._id ?? null
                           )
                         }
@@ -365,7 +343,6 @@ const ChatRoom: React.FC = () => {
                       >
                         <MoreVertical size={16} />
                       </button>
-
                       {menuOpen === msg._id && (
                         <div className="absolute right-0 mt-1 w-28 bg-gray-800 rounded-lg shadow-lg text-sm z-50">
                           <button
@@ -399,20 +376,46 @@ const ChatRoom: React.FC = () => {
       </div>
 
       {/* Input */}
-      <div className="border-t border-gray-700 p-3 flex items-center gap-3">
+      <div className="relative border-t border-gray-700 p-3 flex items-center gap-3">
         {editingMessageId && (
           <div className="text-xs text-yellow-400 absolute -top-4 left-5">
             Editing message — press Send to update or clear text to cancel
           </div>
         )}
+
+        {/* Emoji */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setShowEmojiPicker((prev) => !prev)}
+            className="p-2 rounded-full hover:bg-gray-700 text-white transition"
+            aria-label="Add emoji"
+          >
+            <Smile size={22} />
+          </button>
+          {showEmojiPicker && (
+            <div className="absolute bottom-12 left-0 z-50">
+              <EmojiPicker
+                theme={Theme.DARK}
+                emojiStyle={EmojiStyle.APPLE}
+                onEmojiClick={(emojiData: EmojiClickData) => {
+                  setText((prev) => prev + emojiData.emoji);
+                  setShowEmojiPicker(false);
+                }}
+              />
+            </div>
+          )}
+        </div>
+
         <input
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Type a message..."
-          className="flex-1 bg-gray-800 text-white px-4 py-2 rounded-xl outline-none focus:ring-2 focus:ring-yellow-400"
+          className="flex-1 bg-gray-800 text-white px-4 py-2 rounded-xl outline-none focus:ring-2 focus:ring-white"
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
         />
+
         <button
           onClick={handleSend}
           disabled={!text.trim() || loading}

@@ -11,6 +11,8 @@ const GigPosterList: React.FC = () => {
     (state: RootState) => state.poster
   );
 
+  console.log("posters content:", posters);
+
   useEffect(() => {
     dispatch(fetchAllPosters());
   }, [dispatch]);
@@ -82,7 +84,14 @@ const GigPosterList: React.FC = () => {
 
             <div className="p-4 space-y-2">
               <h2 className="text-xl font-semibold">{poster.eventName}</h2>
-
+              <div
+                className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-bold tracking-wide uppercase`}
+              >
+                🎯 {poster.artistCategory || "Creative Talent"}
+              </div>
+              <p className="mt-2 text-gray-600 text-sm italic">
+                Your expertise could make this event a success!
+              </p>
               {poster.eventStartDate && (
                 <p className="text-sm text-blue-600 font-medium">
                   📅{" "}
@@ -111,16 +120,17 @@ const GigPosterList: React.FC = () => {
               </span>
 
               <div className="flex justify-between items-center mt-3">
-                <p className="text-green-600 font-medium">KSH.{poster.budget}</p>
+                <p className="text-green-600 font-medium">
+                  KSH.{poster.budget}
+                </p>
                 <span className="text-sm text-gray-400">
                   {poster.eventPlannerName || "Unknown Planner"}
                 </span>
               </div>
               <div>
-
-                  <p className="mt-3 text-sm text-yellow-600 italic">
-                      📍 {poster.venueAddress || "Location not specified"}
-                    </p>
+                <p className="mt-3 text-sm text-yellow-600 italic">
+                  📍 {poster.venueAddress || "Location not specified"}
+                </p>
               </div>
             </div>
           </div>

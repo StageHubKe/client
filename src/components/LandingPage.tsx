@@ -166,12 +166,12 @@ const LandingPage = () => {
           {user && (
             <button
               onClick={() => navigate("/conversations")}
-              className="flex items-center gap-2 hover:text-yellow-400 transition relative"
+              className="flex items-center gap-1.5 pr-3 hover:text-yellow-400 transition relative"
             >
               <MessageCircle size={20} />
               <span>Messages</span>
               {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-yellow-400 text-black text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] flex items-center justify-center">
+                <span className="absolute top-3.5 right-0 ml-[9rem] transform translate-x-1/2 -translate-y-1/2 bg-yellow-400 text-black text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] flex items-center justify-center">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
