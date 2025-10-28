@@ -72,7 +72,10 @@ export const loginUser = createAsyncThunk<
       `${API_URL}/login`,
       credentials,
       { withCredentials: true }
+      
     );
+    //cool
+      console.log("Login response data:", data);
     return data;
   } catch (error) {
     const err = error as AxiosError<{ message: string }>;
@@ -170,6 +173,7 @@ export const googleLogin = createAsyncThunk<
       { credential },
       { withCredentials: true }
     );
+      console.log("Login response data:", data);
     return data;
   } catch (error) {
     const err = error as AxiosError<{ message: string }>;
