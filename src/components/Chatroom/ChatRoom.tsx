@@ -48,6 +48,8 @@ const ChatRoom: React.FC = () => {
   const [participantOnline, setParticipantOnline] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [isCreatingMeet, setIsCreatingMeet] = useState(false);
+
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -292,49 +294,87 @@ const ChatRoom: React.FC = () => {
           </h2>
         </div>
 
-        <button
-          onClick={async () => {
-            if (!conversationId) return;
-            try {
-              await dispatch(
-                createMeet({ topic: `Chat with ${participantName}` })
-              ).unwrap();
-              if (meetLink) {
-                await dispatch(
-                  sendMessage({
-                    conversationId,
-                    senderId: user!._id,
-                    text: `Join the Google Meet: ${meetLink}`,
-                  })
-                ).unwrap();
-                toast.success("Google Meet created and shared!");
-                dispatch(resetMeet());
-              }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } catch (err: any) {
-              console.log("Error creating google meet:", err);
-              toast.error(err.message || "Failed to create Google Meet");
-            }
-          }}
-          className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:from-blue-400 hover:to-indigo-500 transition-all duration-300"
-          title="Start a Google Meet video call"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-            className="w-5 h-5"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M4 6h7a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z"
-            />
-          </svg>
-          <span className="hidden sm:inline font-medium">Create Meet</span>
-        </button>
+      <button
+  onClick={async () => {
+    if (!conversationId || isCreatingMeet) return;
+    setIsCreatingMeet(true);
+    try {
+      await dispatch(
+        createMeet({ topic: `Chat with ${participantName}` })
+      ).unwrap();
+
+      if (meetLink) {
+        await dispatch(
+          sendMessage({
+            conversationId,
+            senderId: user!._id,
+            text: `Join the Google Meet: ${meetLink}`,
+          })
+        ).unwrap();
+        toast.success("Google Meet created and shared!");
+        dispatch(resetMeet());
+      }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      console.log("Error creating google meet:", err);
+      toast.error(err.message || "Failed to create Google Meet");
+    } finally {
+      setIsCreatingMeet(false);
+    }
+  }}
+  disabled={isCreatingMeet}
+  className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow-md transition-all duration-300 ${
+    isCreatingMeet
+      ? "bg-gray-600 cursor-not-allowed"
+      : "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500"
+  } text-white`}
+  title="Start a Google Meet video call"
+>
+  {isCreatingMeet ? (
+    <>
+      <svg
+        className="animate-spin h-5 w-5 text-white"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        ></circle>
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+        ></path>
+      </svg>
+      <span className="font-medium">Creating...</span>
+    </>
+  ) : (
+    <>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={2}
+        stroke="currentColor"
+        className="w-5 h-5"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M4 6h7a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z"
+        />
+      </svg>
+      <span className="hidden sm:inline font-medium">Create Meet</span>
+    </>
+  )}
+</button>
+
       </div>
 
       {/* Messages */}

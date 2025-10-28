@@ -15,7 +15,7 @@ export const createMeet = createAsyncThunk(
         headers: {
           "Content-Type": "application/json",
         },
-        withCredentials: true, // ✅ important: send cookies automatically
+        withCredentials: true, 
       });
       return data;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
