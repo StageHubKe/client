@@ -7,6 +7,7 @@
     import bidSlice from "./reducers/bidReducer/bidSlice";
     import notificationSlice from "./reducers/notificationReducer/notificationSlice"
     import eventSlice from "./reducers/EventReducer/eventSlice";
+    import meetSlice from "./reducers/meetReducer/meetSlice";
 
     export const store = configureStore({
       reducer: {
@@ -17,6 +18,7 @@
         bid: bidSlice, 
         notification: notificationSlice,
         event: eventSlice,
+        meet: meetSlice,
       },
         middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

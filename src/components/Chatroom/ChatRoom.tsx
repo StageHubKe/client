@@ -33,6 +33,10 @@ import {
 import type { AppDispatch, RootState } from "../../../redux/store";
 import type { User } from "../../types";
 import { fetchCurrentUser } from "../../../redux/reducers/authReducer/authSlice";
+import {
+  createMeet,
+  resetMeet,
+} from "../../../redux/reducers/meetReducer/meetSlice";
 
 const ChatRoom: React.FC = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -57,6 +61,10 @@ const ChatRoom: React.FC = () => {
     (state: RootState) => state.auth
   );
 
+  const { meetLink, error: meetError } = useSelector(
+    (state: RootState) => state.meet
+  );
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const currentMessages = conversationId ? messages[conversationId] || [] : [];
   const participantName = conversationId
@@ -66,6 +74,13 @@ const ChatRoom: React.FC = () => {
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
+
+  useEffect(() => {
+    if (meetError) {
+      toast.error(meetError);
+      dispatch(resetMeet());
+    }
+  }, [meetError, dispatch]);
 
   useEffect(() => {
     if (!user) dispatch(fetchCurrentUser());
@@ -265,6 +280,7 @@ const ChatRoom: React.FC = () => {
           >
             <ArrowLeft size={20} />
           </button>
+
           <h2 className="text-xl font-semibold text-white flex items-center gap-2">
             {`Chat with ${participantName}`}
             <span
@@ -275,6 +291,50 @@ const ChatRoom: React.FC = () => {
             ></span>
           </h2>
         </div>
+
+        <button
+          onClick={async () => {
+            if (!conversationId) return;
+            try {
+              await dispatch(
+                createMeet({ topic: `Chat with ${participantName}` })
+              ).unwrap();
+              if (meetLink) {
+                await dispatch(
+                  sendMessage({
+                    conversationId,
+                    senderId: user!._id,
+                    text: `Join the Google Meet: ${meetLink}`,
+                  })
+                ).unwrap();
+                toast.success("Google Meet created and shared!");
+                dispatch(resetMeet());
+              }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } catch (err: any) {
+              console.log("Error creating google meet:", err);
+              toast.error(err.message || "Failed to create Google Meet");
+            }
+          }}
+          className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:from-blue-400 hover:to-indigo-500 transition-all duration-300"
+          title="Start a Google Meet video call"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+            className="w-5 h-5"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M4 6h7a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z"
+            />
+          </svg>
+          <span className="hidden sm:inline font-medium">Create Meet</span>
+        </button>
       </div>
 
       {/* Messages */}
@@ -301,7 +361,26 @@ const ChatRoom: React.FC = () => {
                       : "bg-gray-800 text-gray-100"
                   }`}
                 >
-                  <p className="break-words leading-relaxed">{msg.text}</p>
+                  <p className="break-words leading-relaxed">
+                    {msg.text.split(" ").map((word, i) => {
+                      // Detect links
+                      const isLink = /^https?:\/\/[^\s]+$/.test(word);
+                      return isLink ? (
+                        <a
+                          key={i}
+                          href={word}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 font-medium underline hover:text-blue-300 break-words"
+                        >
+                          {word}
+                        </a>
+                      ) : (
+                        <span key={i}> {word} </span>
+                      );
+                    })}
+                  </p>
+
                   <div className="flex items-center justify-end mt-1 space-x-1 text-xs text-gray-600">
                     <span
                       className={`${
