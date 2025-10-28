@@ -3,15 +3,12 @@ import { LoadScript } from "@react-google-maps/api";
 import LandingPage from "./components/LandingPage";
 import Register from "./components/Auth/Register";
 import Login from "./components/Auth/Login";
-
 import CreateArtist from "./components/Artist/CreateArtist";
 import GetAllArtists from "./components/Artist/GetAllArtists";
 import GetArtist from "./components/Artist/GetArtist";
 import UpdateArtist from "./components/Artist/UpdateArtist";
-
 import ChatRoom from "./components/Chatroom/ChatRoom";
 import Conversations from "./components/Chatroom/Conversations";
-
 import CreateGigPoster from "./components/Poster/CreateGigPoster";
 import GigPosterList from "./components/Poster/GigPosterList";
 import GigPosterDetails from "./components/Poster/GigPosterDetails";
@@ -28,11 +25,9 @@ import EventDetails from "./components/Event/EventDetails";
 import UpdateEvent from "./components/Event/UpdateEvent";
 import VerifyEmail from "./components/Auth/VerifyEmail";
 import ResetPassword from "./components/Auth/ResetPassword";
-import ForgotPassword  from "./components/Auth/ForgotPassword";
+import ForgotPassword from "./components/Auth/ForgotPassword";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAP_SECRET_KEY;
-
-// Wrapper to automatically load Google Maps for components needing places autocomplete
 const WithGoogleMaps = ({ children }: { children: React.ReactNode }) => (
   <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={["places"]}>
     {children}
