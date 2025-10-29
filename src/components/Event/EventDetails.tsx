@@ -60,104 +60,111 @@ const EventDetails: React.FC = () => {
 
   if (loading)
     return (
-      <p className="text-center mt-10 text-lg text-gray-600">Loading event...</p>
+      <div className="flex justify-center items-center h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-indigo-900">
+        <p className="text-xl text-gray-300 animate-pulse">Loading event...</p>
+      </div>
     );
 
   if (error)
     return (
-      <p className="text-center text-red-500 mt-10 font-semibold">{error}</p>
+      <div className="flex justify-center items-center h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-indigo-900">
+        <p className="text-red-400 text-lg font-semibold">{error}</p>
+      </div>
     );
 
   if (!singleEvent)
-    return <p className="text-center text-gray-600 mt-10">Event not found.</p>;
+    return (
+      <div className="flex justify-center items-center h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-indigo-900">
+        <p className="text-gray-400 text-lg">Event not found.</p>
+      </div>
+    );
 
   const isCreator = user?._id === singleEvent.createdBy?._id;
 
   return (
-    <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-2xl overflow-hidden mt-10 relative">
-      {/* Top Navigation Controls */}
-      <div className="flex justify-between items-center p-4 bg-gray-50 border-b">
-        <button
-          onClick={() => navigate("/events")}
-          className="flex items-center text-gray-700 hover:text-blue-700 transition"
-        >
-          <ArrowLeft className="mr-2" size={20} /> Back to Events
-        </button>
-
-        {/* Hamburger for all screen sizes */}
-        {isCreator && (
+    <div className="w-full min-h-screen flex justify-center items-start py-10 bg-gradient-to-b from-gray-900 via-purple-900 to-indigo-900">
+      <div className="w-full max-w-4xl bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-900/50">
           <button
-            onClick={() => setMenuOpen((prev) => !prev)}
-            className="text-gray-700 p-2 rounded-lg bg-gray-100 hover:bg-gray-200 focus:outline-none"
-            aria-label="Toggle action menu"
-            aria-expanded={menuOpen}
+            onClick={() => navigate("/events")}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition text-sm font-medium text-gray-200 shadow-md hover:shadow-lg"
           >
-            {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            <ArrowLeft size={18} /> Back to Events
           </button>
-        )}
-      </div>
 
-      {/* Event Image */}
-      {singleEvent.image && (
-        <img
-          src={singleEvent.image}
-          alt={singleEvent.title}
-          className="w-full h-80 object-cover"
-        />
-      )}
-
-      {/* Event Content */}
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-blue-700">{singleEvent.title}</h1>
-        <p className="text-gray-600 mt-4 leading-relaxed">
-          {singleEvent.description}
-        </p>
-
-        <div className="mt-6 space-y-2 text-sm text-gray-800">
-          <p>
-            📍 <span className="font-medium">Location:</span>{" "}
-            {singleEvent.location}
-          </p>
-          <p>
-            📅 <span className="font-medium">Date:</span>{" "}
-            {new Date(singleEvent.date).toLocaleString()}
-          </p>
-          <p>
-            🎭 <span className="font-medium">Type:</span>{" "}
-            {singleEvent.eventType?.toUpperCase()}
-          </p>
+          {isCreator && (
+            <button
+              onClick={() => setMenuOpen((prev) => !prev)}
+              className="text-gray-200 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 focus:outline-none transition"
+              aria-label="Toggle action menu"
+              aria-expanded={menuOpen}
+            >
+              {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          )}
         </div>
 
-        {/* Hamburger Menu Dropdown */}
-        {isCreator && menuOpen && (
-          <div
-            ref={menuRef}
-            className="absolute top-16 right-4 bg-white shadow-xl rounded-lg p-4 flex flex-col space-y-3 z-50 animate-fadeIn"
-            role="menu"
-            aria-label="Event actions"
-          >
-            <button
-              onClick={() => {
-                handleUpdate();
-                setMenuOpen(false);
-              }}
-              className="text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-              role="menuitem"
-            >
-              ✏️ 
-            </button>
-            <button
-              onClick={() => {
-                handleDelete();
-                setMenuOpen(false);
-              }}
-              className="text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
-              role="menuitem"
-            >
-              🗑️ 
-            </button>
+        {/* Event Image */}
+        {singleEvent.image && (
+          <div className="relative">
+            <img
+              src={singleEvent.image}
+              alt={singleEvent.title}
+              className="w-full h-80 object-cover transition duration-300 hover:scale-[1.02]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
           </div>
         )}
+
+        {/* Event Details Card */}
+        <div className="p-6 bg-white rounded-t-3xl shadow-inner relative">
+          <h1 className="text-3xl font-bold text-indigo-700 mb-3">
+            {singleEvent.title}
+          </h1>
+          <p className="text-gray-700 leading-relaxed mb-4">
+            {singleEvent.description}
+          </p>
+
+          <div className="space-y-2 text-sm text-gray-600">
+            <p>
+              📍 <span className="font-medium">Location:</span>{" "}
+              {singleEvent.location}
+            </p>
+            <p>
+              📅 <span className="font-medium">Date:</span>{" "}
+              {new Date(singleEvent.date).toLocaleString([], {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+            </p>
+            <p>
+              🎭 <span className="font-medium">Type:</span>{" "}
+              {singleEvent.eventType?.toUpperCase()}
+            </p>
+          </div>
+
+          {/* Creator Menu */}
+          {isCreator && menuOpen && (
+            <div
+              ref={menuRef}
+              className="absolute top-20 right-6 bg-white border border-gray-200 shadow-xl rounded-lg p-3 flex flex-col space-y-2 z-50 animate-fadeIn"
+            >
+              <button
+                onClick={handleUpdate}
+                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-md transition"
+              >
+                ✏️ Edit Event
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-semibold shadow-md transition"
+              >
+                🗑️ Delete Event
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

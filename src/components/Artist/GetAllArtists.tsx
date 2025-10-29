@@ -4,6 +4,7 @@ import type { AppDispatch, RootState } from "../../../redux/store";
 import { getAllArtistProfiles } from "../../../redux/reducers/artistReducer/artistSlice";
 import { Link, useNavigate } from "react-router-dom";
 import type { ArtistProfile } from "../../../redux/reducers/artistReducer/artistSlice";
+import { ArrowLeft } from "lucide-react";
 
 const PAGE_SIZE = 6;
 
@@ -59,13 +60,13 @@ const GetAllArtists: React.FC = () => {
       <div className="mb-8 flex justify-between items-center">
         <Link
           to="/"
-          className="text-lg font-semibold text-yellow-400 hover:text-yellow-300 transition"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition text-sm font-medium text-gray-200 shadow-md hover:shadow-lg"
         >
-          ← Back Home
+          <ArrowLeft size={18} />  Back Home
         </Link>
-        <h1 className="text-3xl font-bold text-yellow-300 drop-shadow-md">
+       <h2 className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
           Explore Artists
-        </h1>
+        </h2>
       </div>
 
       {/* Search & Filters */}
@@ -141,9 +142,9 @@ const GetAllArtists: React.FC = () => {
                     <p className="text-gray-700 mb-1 font-medium">
                       🎵 {artist.genre}
                     </p>
-                    <p className="text-gray-600 text-sm line-clamp-3">
+                    {/* <p className="text-gray-600 text-sm line-clamp-3">
                       {artist.bio || "No bio provided."}
-                    </p>
+                    </p> */}
                     <p className="mt-3 text-sm text-yellow-600 italic">
                       📍 {artist.location || "Location not specified"}
                     </p>

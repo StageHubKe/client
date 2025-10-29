@@ -111,12 +111,12 @@ const GetArtist: React.FC = () => {
     );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 text-white py-10 px-6">
-      <div className="max-w-4xl mx-auto bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden">
+  <div className="min-h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-indigo-900 text-white py-10 px-6">
+    <div className="max-w-5xl mx-auto bg-gray-800/60 backdrop-blur-md border border-gray-700 rounded-3xl shadow-2xl overflow-hidden">
         <div className="flex justify-between items-center px-6 py-4">
           <button
             onClick={() => navigate("/getAllArtists")}
-            className="flex items-center gap-2 text-yellow-400 hover:text-yellow-300 transition"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition text-sm font-medium text-gray-200 shadow-md hover:shadow-lg"
           >
             <ArrowLeft size={20} />
             <span>Back to All Artists</span>
@@ -133,7 +133,7 @@ const GetArtist: React.FC = () => {
           onClick={() => setMenuOpen((prev) => !prev)}
           className="p-2 bg-gray-800 hover:bg-gray-700 rounded-full transition"
         >
-          <Menu className="text-yellow-400 w-6 h-6" />
+          <Menu className=" bg-gray-800 hover:bg-gray-700 text-white w-6 h-6" />
         </button>
 
         {/* Dropdown Menu */}

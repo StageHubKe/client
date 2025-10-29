@@ -6,6 +6,7 @@ import {
   createEvent,
   clearEventState,
 } from "../../../redux/reducers/EventReducer/eventSlice";
+import { useNavigate } from "react-router-dom";
 
 const CLOUDINARY_UPLOAD_PRESET = "stagehub";
 const CLOUDINARY_CLOUD_NAME = "ddzndlcxn";
@@ -20,7 +21,7 @@ const CreateEvent: React.FC = () => {
   const [imageUrl, setImageUrl] = useState<string>("");
   const inputRef = useRef<HTMLInputElement | null>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-
+ const navigate = useNavigate();
 const [formData, setFormData] = useState<{
   title: string;
   description: string;
@@ -118,6 +119,7 @@ const [formData, setFormData] = useState<{
       });
       setImageUrl("");
       dispatch(clearEventState());
+      navigate("/events");
     } catch {
       toast.error(error || "Failed to create event");
     }
